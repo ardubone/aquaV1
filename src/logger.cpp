@@ -3,6 +3,8 @@
 #include <DallasTemperature.h>
 #include <RTClib.h>
 #include "display.h" // добавлен include для геттеров
+#include "config.h"
+
 
 extern RTC_DS1307 rtc;
 extern DallasTemperature sensors;
