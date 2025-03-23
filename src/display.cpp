@@ -7,6 +7,15 @@ static DallasTemperature* sensors;
 
 static float roomTemp = 0.0;
 static float roomHumidity = 0.0;
+static float graphBuffer[100];  // Общий буфер для графиков
+
+static int8_t lastSelected = -1;
+static int8_t lastTop = -1;
+static uint8_t lastHighlight = 255;
+static int16_t lastLogScroll = -1;
+
+
+
 
 extern int8_t logsMenuPos;
 extern int8_t mainMenuPos;
@@ -16,6 +25,13 @@ void drawGraphInner();
 void drawGraphOuter();
 void drawGraphRoomTemp();
 void drawGraphHumidity();
+
+void resetMenuCache() {
+  lastSelected = -1;
+  lastTop = -1;
+  lastHighlight = 255;
+  lastLogScroll = -1;
+}
 
 
 
@@ -31,59 +47,55 @@ void setRoomData(float temp, float humidity) {
   roomHumidity = humidity;
 }
 
-void drawFooter(const char* text) {
+void drawFooter(const __FlashStringHelper* text) {
   lcd->setCursor(0, 3);
   lcd->print(text);
-  uint8_t len = strlen(text);
-for (int i = len; i < 20; i++) lcd->print(" ");
+  uint8_t len = strlen_P((PGM_P)text); // корректно считаем длину из PROGMEM
+  for (int i = len; i < 20; i++) lcd->print(" ");
 }
-
 void drawMenu(const char* title, const char* items[], uint8_t count, uint8_t selected) {
-  static int8_t lastSelected = -1;
+  static int8_t lastTop = -1;
+  static uint8_t lastHighlight = 255;
 
-  if (lastSelected != selected) {
-    lcd->clear();
+  int8_t top = selected;
+
+  if (top != lastTop || lastHighlight != 0) {
     lcd->setCursor(0, 0);
+    lcd->print(F("== "));
     lcd->print(title);
-
-    for (uint8_t i = 0; i < 3 && (i + selected) < count; i++) {
+    lcd->print(F(" =="));
+    for (uint8_t i = 0; i < 3; i++) {
+      int idx = top + i;
       lcd->setCursor(0, i + 1);
-      lcd->print((i == 0) ? ">" : " ");
-      lcd->print(items[i + selected]);
+      if (idx < count) {
+        lcd->print((i == 0) ? ">" : " ");
+        lcd->print(items[idx]);
+        uint8_t len = strlen(items[idx]);
+        for (uint8_t j = len + 1; j < 20; j++) lcd->print(" "); // очистить строку
+      } else {
+        lcd->print("                    "); // очистить строку, если пунктов меньше 3
+      }
     }
 
-    lastSelected = selected;
+    lastTop = top;
+    lastHighlight = 0;
   }
 }
 
+
 void drawLogsMenu() {
-  const char* items[] = {
-    "Text Logs",
-    "Graph Logs",
-    "Back"
-  };
-  drawMenu("== Logs Menu ==", items, 3, logsMenuPos);
+  const char* items[] = { "Text Logs", "Graph Logs", "Back" };
+  drawMenu("Logs Menu", items, 3, logsMenuPos);
 }
 
 void drawLogsTextMenu() {
-  const char* items[] = {
-    "Inner Temp",
-    "Outer Temp",
-    "Room Data",
-    "Back"
-  };
-  drawMenu("== Text Logs ==", items, 4, logsMenuPos);
+  const char* items[] = { "Inner Temp", "Outer Temp", "Room Data", "Back" };
+  drawMenu("Text Logs", items, 4, logsMenuPos);
 }
 
 void drawLogsGraphMenu() {
-  const char* items[] = {
-    "Inner Temp",
-    "Outer Temp",
-    "Room Temp",
-    "Humidity",
-    "Back"
-  };
-  drawMenu("== Graph Logs ==", items, 5, logsMenuPos);
+  const char* items[] = { "Inner Temp", "Outer Temp", "Room Temp", "Humidity", "Back" };
+  drawMenu("Graph Logs", items, 5, logsMenuPos);
 }
 
 void drawTimestamp(const DateTime& ts) {
@@ -103,54 +115,66 @@ void drawTimestamp(const DateTime& ts) {
 }
 
 void drawInnerLogs() {
-  lcd->clear();
-  lcd->setCursor(0, 0);
-  lcd->print("Inner Temp Logs:");
-  for (uint8_t i = 0; i < 3; i++) {
-    int idx = logScrollPos + i;
-    if (idx < logCount) {
-      lcd->setCursor(0, i + 1);
-      drawTimestamp(temperatureLogs[idx].timestamp);
-      lcd->print(" I:");
-      lcd->print(temperatureLogs[idx].innerTemp, 1);
+  if (logScrollPos != lastLogScroll) {
+    lcd->clear();
+    lcd->setCursor(0, 0);
+    lcd->print(F("Inner Temp Logs:"));
+    for (uint8_t i = 0; i < 3; i++) {
+      int idx = logScrollPos + i;
+      if (idx < logCount) {
+        lcd->setCursor(0, i + 1);
+        drawTimestamp(temperatureLogs[idx].timestamp);
+        lcd->print(" I:");
+        lcd->print(temperatureLogs[idx].innerTemp, 1);
+      }
     }
+    drawFooter(F("<Scroll:Encoder>"));
+    lastLogScroll = logScrollPos;
   }
-  drawFooter("<Scroll:Encoder>");
 }
+
 
 void drawOuterLogs() {
-  lcd->clear();
-  lcd->setCursor(0, 0);
-  lcd->print("Outer Temp Logs:");
-  for (uint8_t i = 0; i < 3; i++) {
-    int idx = logScrollPos + i;
-    if (idx < logCount) {
-      lcd->setCursor(0, i + 1);
-      drawTimestamp(temperatureLogs[idx].timestamp);
-      lcd->print(" O:");
-      lcd->print(temperatureLogs[idx].outerTemp, 1);
+  if (logScrollPos != lastLogScroll) {
+    lcd->clear();
+    lcd->setCursor(0, 0);
+    lcd->print(F("Outer Temp Logs:"));
+    for (uint8_t i = 0; i < 3; i++) {
+      int idx = logScrollPos + i;
+      if (idx < logCount) {
+        lcd->setCursor(0, i + 1);
+        drawTimestamp(temperatureLogs[idx].timestamp);
+        lcd->print(" O:");
+        lcd->print(temperatureLogs[idx].outerTemp, 1);
+      }
     }
+    drawFooter(F("<Scroll:Encoder>"));
+    lastLogScroll = logScrollPos;
   }
-  drawFooter("<Scroll:Encoder>");
 }
 
+
 void drawRoomLogs() {
-  lcd->clear();
-  lcd->setCursor(0, 0);
-  lcd->print("Room Data Logs:");
-  for (uint8_t i = 0; i < 3; i++) {
-    int idx = logScrollPos + i;
-    if (idx < logCount) {
-      lcd->setCursor(0, i + 1);
-      drawTimestamp(temperatureLogs[idx].timestamp);
-      lcd->print(" Rt:");
-      lcd->print(temperatureLogs[idx].roomTemp, 1);
-      lcd->print(" Rh:");
-      lcd->print(temperatureLogs[idx].roomHumidity, 0);
+  if (logScrollPos != lastLogScroll) {
+    lcd->clear();
+    lcd->setCursor(0, 0);
+    lcd->print(F("Room Data Logs:"));
+    for (uint8_t i = 0; i < 3; i++) {
+      int idx = logScrollPos + i;
+      if (idx < logCount) {
+        lcd->setCursor(0, i + 1);
+        drawTimestamp(temperatureLogs[idx].timestamp);
+        lcd->print(" Rt:");
+        lcd->print(temperatureLogs[idx].roomTemp, 1);
+        lcd->print(" Rh:");
+        lcd->print(temperatureLogs[idx].roomHumidity, 0);
+      }
     }
+    drawFooter(F("<Scroll:Encoder>"));
+    lastLogScroll = logScrollPos;
   }
-  drawFooter("<Scroll:Encoder>");
 }
+
 
 void drawRealtime() {
   sensors->requestTemperatures();
@@ -159,35 +183,46 @@ void drawRealtime() {
 
   lcd->clear();
   lcd->setCursor(0, 0);
-  lcd->print("Inner Temp: ");
+  lcd->print(F("Inner Temp: "));
   lcd->print(inner, 1);
   lcd->print("C");
 
   lcd->setCursor(0, 1);
-  lcd->print("Out Temp:   ");
+  lcd->print(F("Out Temp:   "));
   lcd->print(outer, 1);
   lcd->print("C");
 
   lcd->setCursor(0, 2);
-  lcd->print("Room: ");
+  lcd->print(F("Room: "));
   lcd->print(roomTemp, 1);
   lcd->print("C ");
   lcd->print(roomHumidity, 0);
   lcd->print("%");
 
-  drawFooter("<Press to return>");
+  drawFooter(F("<Press to return>"));
 }
 
 void showScreen(Screen screen) {
   switch (screen) {
     case MAIN_MENU: {
+      resetMenuCache();
       const char* mainMenuItems[] = { "Realtime", "Logs" };
-      drawMenu("== Main Menu ==", mainMenuItems, 2, mainMenuPos);
+      drawMenu("Main Menu", mainMenuItems, 2, mainMenuPos);
       break;
     }
-    case LOGS_MENU:        drawLogsMenu(); break;
-    case LOGS_TEXT_MENU:   drawLogsTextMenu(); break;
-    case LOGS_GRAPH_MENU:  drawLogsGraphMenu(); break;
+    case LOGS_MENU:
+      resetMenuCache();
+      drawLogsMenu();
+      break;
+    case LOGS_TEXT_MENU:
+      resetMenuCache();
+      drawLogsTextMenu();
+      break;
+    case LOGS_GRAPH_MENU:
+      resetMenuCache();
+      drawLogsGraphMenu();
+      break;
+
     case LOGS_INNER_TEXT:  drawInnerLogs(); break;
     case LOGS_OUTER_TEXT:  drawOuterLogs(); break;
     case LOGS_ROOM_TEXT:   drawRoomLogs(); break;
@@ -202,11 +237,26 @@ void showScreen(Screen screen) {
 
 void updateScreen(Screen screen) {
   static unsigned long lastUpdate = 0;
-  if (screen == REALTIME && millis() - lastUpdate > 1000) {
-    drawRealtime();
-    lastUpdate = millis();
+  static unsigned long lastTempRequest = 0;
+
+  if (screen == REALTIME) {
+    unsigned long now = millis();
+
+    // раз в 1.5 секунды — запросить температуру
+    if (now - lastTempRequest > 1500) {
+      sensors->requestTemperatures();
+      lastTempRequest = now;
+    }
+
+    // раз в 1 секунду — обновить экран
+    if (now - lastUpdate > 1000) {
+      drawRealtime(); // теперь НЕ вызывает sensors
+      lastUpdate = now;
+    }
   }
 }
+
+
 const char* getBar(float value, float minVal, float maxVal) {
   const char* bars[] = {" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
   int level = 0;
@@ -237,42 +287,47 @@ void drawGraphLine(const char* label, float values[], int count) {
   }
 
   lcd->setCursor(0, 2);
-  lcd->print("Min:");
+  lcd->print(F("Min:"));
   lcd->print(minVal, 1);
-  lcd->print(" Max:");
+  lcd->print(F(" Max:"));
   lcd->print(maxVal, 1);
 
-  drawFooter("<Press to return>");
+  drawFooter(F("<Press to return>"));
 }
 
 void drawGraphInner() {
-  float data[logCount];
   for (int i = 0; i < logCount; i++) {
-    data[i] = temperatureLogs[i].innerTemp;
+    graphBuffer[i] = temperatureLogs[i].innerTemp;
   }
-  drawGraphLine("I:", data, logCount);
+  drawGraphLine("I:", graphBuffer, logCount);
 }
 
 void drawGraphOuter() {
-  float data[logCount];
   for (int i = 0; i < logCount; i++) {
-    data[i] = temperatureLogs[i].outerTemp;
+    graphBuffer[i] = temperatureLogs[i].outerTemp;
   }
-  drawGraphLine("O:", data, logCount);
+  drawGraphLine("O:", graphBuffer, logCount);
 }
 
 void drawGraphRoomTemp() {
-  float data[logCount];
   for (int i = 0; i < logCount; i++) {
-    data[i] = temperatureLogs[i].roomTemp;
+    graphBuffer[i] = temperatureLogs[i].roomTemp;
   }
-  drawGraphLine("Rt:", data, logCount);
+  drawGraphLine("Rt:", graphBuffer, logCount);
 }
 
 void drawGraphHumidity() {
-  float data[logCount];
   for (int i = 0; i < logCount; i++) {
-    data[i] = temperatureLogs[i].roomHumidity;
+    graphBuffer[i] = temperatureLogs[i].roomHumidity;
   }
-  drawGraphLine("Rh:", data, logCount);
+  drawGraphLine("Rh:", graphBuffer, logCount);
+}
+
+
+float getRoomTemp() {
+  return roomTemp;
+}
+
+float getRoomHumidity() {
+  return roomHumidity;
 }

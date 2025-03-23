@@ -1,4 +1,3 @@
-// display.h
 #pragma once
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
@@ -19,7 +18,6 @@ enum Screen {
   LOGS_GRAPH_HUMID
 };
 
-
 void initDisplay(LiquidCrystal_I2C* lcdRef, DallasTemperature* sensorRef);
 void showScreen(Screen screen);
 void updateScreen(Screen screen);
@@ -27,4 +25,9 @@ void setRoomData(float temp, float humidity);
 void drawInnerLogs();
 void drawOuterLogs();
 void drawRoomLogs();
+void drawFooter(const __FlashStringHelper* text);
+void resetMenuCache();
 
+
+float getRoomTemp();
+float getRoomHumidity();
