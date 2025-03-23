@@ -61,17 +61,17 @@ void handleButton(Screen &currentScreen)
 {
   static bool lastState = true;
   bool currentState = digitalRead(4);
-  static bool buttonState = HIGH;
-  static bool lastButtonState = HIGH;
+  //static bool buttonState = HIGH;
+  //static bool lastButtonState = HIGH;
   static unsigned long debounceDelay = 50;
-  static unsigned long lastDebounceTime = 0;
+  //static unsigned long lastDebounceTime = 0;
   static unsigned long buttonDownTime = 0;
 
-  bool reading = digitalRead(4);
-  if (reading != lastButtonState)
-  {
-    lastDebounceTime = millis(); // сброс таймера
-  }
+  //bool reading = digitalRead(4);
+  // if (reading != lastButtonState)
+  // {
+  //   lastDebounceTime = millis(); // сброс таймера
+  // }
 
   if (lastState && !currentState)
   {
@@ -173,5 +173,5 @@ void handleButton(Screen &currentScreen)
   lastState = currentState;
   resetMenuCache();
   showScreen(currentScreen);
-  lastButtonState = reading;
+  //lastButtonState = reading;
 }
