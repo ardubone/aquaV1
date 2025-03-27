@@ -203,7 +203,6 @@ void drawRoomLogs()
 
 void drawRealtime()
 {
-  sensors->requestTemperatures();
   float inner = sensors->getTempCByIndex(0);
   float outer = sensors->getTempCByIndex(1);
 
@@ -253,23 +252,23 @@ void showScreen(Screen screen)
     break;
 
   case LOGS_INNER_TEXT:
-  resetMenuCache();
+    resetMenuCache();
     drawInnerLogs();
     break;
   case LOGS_OUTER_TEXT:
-  resetMenuCache();
+    resetMenuCache();
     drawOuterLogs();
     break;
   case LOGS_ROOM_TEXT:
-  resetMenuCache();
+    resetMenuCache();
     drawRoomLogs();
     break;
   case LOGS_GRAPH_INNER:
-  resetMenuCache();
+    resetMenuCache();
     drawGraphInner();
     break;
   case LOGS_GRAPH_OUTER:
-  resetMenuCache();
+    resetMenuCache();
     drawGraphOuter();
     break;
   case LOGS_GRAPH_ROOM:
@@ -306,7 +305,7 @@ void updateScreen(Screen screen)
     // раз в 1 секунду — обновить экран
     if (now - lastUpdate > 1000)
     {
-      drawRealtime(); // теперь НЕ вызывает sensors
+      drawRealtime();
       lastUpdate = now;
     }
   }

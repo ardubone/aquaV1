@@ -24,46 +24,78 @@ ESP32Encoder encoder;
 DHT dht(DHTPIN, DHTTYPE);
 Screen currentScreen = MAIN_MENU;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   delay(200);
   Serial.println(F("Setup started"));
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
-
-  lcd.init();
-  lcd.backlight();
-
-  dht.begin();
-  sensors.begin();
-
-  if (!rtc.begin()) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("RTC not found!");
-    while (true);
+  delay(500);
+  if (!rtc.begin())
+  {
+    for (int i = 0; i < 5; i++)
+    { 
+      Serial.println(F("RTC not found, retrying..."));
+      delay(500);
+      if (rtc.begin())
+        break;
+    }
+    if (!rtc.begin())
+    {
+      lcd.setCursor(0, 0);
+      lcd.print(F("RTC error!"));
+      while (true)
+        ;
+    }
   }
-  if (!rtc.isrunning()) {
+
+  if (!rtc.isrunning())
+  {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+  delay(500);
+  lcd.init();
+  delay(50);
+  lcd.backlight();
+  lcd.clear();
+  delay(500);
+  dht.begin();
+  delay(500);
+  sensors.begin();
+  if (sensors.getDeviceCount() == 0)
+  {
+    lcd.clear();
+    lcd.print(F("No sensors found!"));
+    while (true)
+      ;
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-
-
+  delay(500);
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
 
   initDisplay(&lcd, &sensors);
   showScreen(currentScreen);
+  Serial.println(F("all init"));
 }
 
 void loop() {
-  handleEncoder(currentScreen);
-  handleButton(currentScreen);
-  updateTemperatureLog();
-  updateScreen(currentScreen);
-  setRoomData(dht.readTemperature(), dht.readHumidity());
+  static unsigned long lastUpdateFast = 0;
+  static unsigned long lastUpdateSlow = 0;
+  
+  if (millis() - lastUpdateFast > 100) {
+    handleEncoder(currentScreen);
+    handleButton(currentScreen);
+    updateScreen(currentScreen);
+    lastUpdateFast = millis();
+  }
+  
+  if (millis() - lastUpdateSlow > 2000) {
+    updateTemperatureLog();
+    setRoomData(dht.readTemperature(), dht.readHumidity());
+    lastUpdateSlow = millis();
+  }
 }
-
-

@@ -75,11 +75,6 @@ void handleButton(Screen &currentScreen)
       buttonState = reading;
       if (buttonState == LOW)
       {
-
-        // switch (currentScreen) {
-        //   case MAIN_MENU:
-        //     currentScreen = (mainMenuPos == 0) ? REALTIME : LOGS_MENU;
-        //     break;
         switch (currentScreen)
         {
         case MAIN_MENU:
@@ -90,8 +85,10 @@ void handleButton(Screen &currentScreen)
           else
           {
             currentScreen = LOGS_MENU;
-            logsMenuPos = 0; // Сброс позиции при входе в LOGS_MENU
+            logsMenuPos = 0;
           }
+          resetMenuCache();
+          showScreen(currentScreen);
           break;
 
         case LOGS_MENU:
@@ -107,6 +104,8 @@ void handleButton(Screen &currentScreen)
             currentScreen = MAIN_MENU;
             break;
           }
+          resetMenuCache();
+          showScreen(currentScreen);
           break;
 
         case LOGS_TEXT_MENU:
@@ -114,18 +113,23 @@ void handleButton(Screen &currentScreen)
           {
           case 0:
             currentScreen = LOGS_INNER_TEXT;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 1:
             currentScreen = LOGS_OUTER_TEXT;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 2:
             currentScreen = LOGS_ROOM_TEXT;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 3:
-            currentScreen = LOGS_TEXT_MENU;
+            currentScreen = LOGS_MENU;
+            logsMenuPos = 0;
             break;
           }
-          logScrollPos = max(0, logCount - 3);
+          resetMenuCache();
+          showScreen(currentScreen);
           break;
 
         case LOGS_GRAPH_MENU:
@@ -133,21 +137,27 @@ void handleButton(Screen &currentScreen)
           {
           case 0:
             currentScreen = LOGS_GRAPH_INNER;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 1:
             currentScreen = LOGS_GRAPH_OUTER;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 2:
             currentScreen = LOGS_GRAPH_ROOM;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 3:
             currentScreen = LOGS_GRAPH_HUMID;
+            logScrollPos = max(0, logCount - 20);
             break;
           case 4:
-            currentScreen = LOGS_GRAPH_MENU;
+            currentScreen = LOGS_MENU;
+            logsMenuPos = 0;
             break;
           }
-          logScrollPos = max(0, logCount - 20);
+          resetMenuCache();
+          showScreen(currentScreen);
           break;
 
         case REALTIME:
@@ -160,11 +170,16 @@ void handleButton(Screen &currentScreen)
         case LOGS_INNER_TEXT:
         case LOGS_OUTER_TEXT:
         case LOGS_ROOM_TEXT:
+          currentScreen = LOGS_TEXT_MENU;
+          logsMenuPos = 0;
+          resetMenuCache();
+          showScreen(currentScreen);
+          break;
         case LOGS_GRAPH_INNER:
         case LOGS_GRAPH_OUTER:
         case LOGS_GRAPH_ROOM:
         case LOGS_GRAPH_HUMID:
-          currentScreen = LOGS_MENU;
+          currentScreen = LOGS_GRAPH_MENU;
           logsMenuPos = 0;
           resetMenuCache();
           showScreen(currentScreen);
@@ -172,11 +187,10 @@ void handleButton(Screen &currentScreen)
 
         default:
           currentScreen = MAIN_MENU;
+          resetMenuCache();
+          showScreen(currentScreen);
           break;
         }
-
-        resetMenuCache();
-        showScreen(currentScreen);
       }
     }
   }
