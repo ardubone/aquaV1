@@ -17,7 +17,7 @@ int32_t lastEncoderPos = 0;
 void handleEncoder(Screen &currentScreen)
 {
   int32_t newPos = encoder.getCount();
-  int8_t delta = (newPos - lastEncoderPos) / 4;
+  int8_t delta = (newPos - lastEncoderPos) / 2;
 
   if (delta != 0)
   {

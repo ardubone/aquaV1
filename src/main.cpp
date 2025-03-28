@@ -33,10 +33,12 @@ void setup()
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   delay(500);
+  lcd.init();
+  delay(50);
   if (!rtc.begin())
   {
     for (int i = 0; i < 5; i++)
-    { 
+    {
       Serial.println(F("RTC not found, retrying..."));
       delay(500);
       if (rtc.begin())
@@ -56,8 +58,6 @@ void setup()
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
   delay(500);
-  lcd.init();
-  delay(50);
   lcd.backlight();
   lcd.clear();
   delay(500);
@@ -82,18 +82,21 @@ void setup()
   Serial.println(F("all init"));
 }
 
-void loop() {
+void loop()
+{
   static unsigned long lastUpdateFast = 0;
   static unsigned long lastUpdateSlow = 0;
-  
-  if (millis() - lastUpdateFast > 100) {
+
+  if (millis() - lastUpdateFast > 100)
+  {
     handleEncoder(currentScreen);
     handleButton(currentScreen);
     updateScreen(currentScreen);
     lastUpdateFast = millis();
   }
-  
-  if (millis() - lastUpdateSlow > 2000) {
+
+  if (millis() - lastUpdateSlow > 2000)
+  {
     updateTemperatureLog();
     setRoomData(dht.readTemperature(), dht.readHumidity());
     lastUpdateSlow = millis();
