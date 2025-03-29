@@ -28,12 +28,11 @@ void setup()
 {
   Serial.begin(115200);
   delay(200);
-  Serial.println(F("Setup started"));
-
+  //Serial.println(F("Setup started"));
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
-  delay(500);
   lcd.init();
+  lcd.print(F("Loading...."));
   delay(50);
   if (!rtc.begin())
   {
@@ -59,7 +58,6 @@ void setup()
   }
   delay(500);
   lcd.backlight();
-  lcd.clear();
   delay(500);
   dht.begin();
   delay(500);
@@ -76,10 +74,9 @@ void setup()
   delay(500);
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
-
   initDisplay(&lcd, &sensors);
   showScreen(currentScreen);
-  Serial.println(F("all init"));
+  //Serial.println(F("all init"));
 }
 
 void loop()

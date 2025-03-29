@@ -49,7 +49,6 @@ void handleEncoder(Screen &currentScreen)
     default:
       break;
     }
-
     showScreen(currentScreen);
   }
 }
@@ -87,7 +86,6 @@ void handleButton(Screen &currentScreen)
             currentScreen = LOGS_MENU;
             logsMenuPos = 0;
           }
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
@@ -104,7 +102,6 @@ void handleButton(Screen &currentScreen)
             currentScreen = MAIN_MENU;
             break;
           }
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
@@ -128,7 +125,6 @@ void handleButton(Screen &currentScreen)
             logsMenuPos = 0;
             break;
           }
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
@@ -156,14 +152,12 @@ void handleButton(Screen &currentScreen)
             logsMenuPos = 0;
             break;
           }
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
         case REALTIME:
           currentScreen = MAIN_MENU;
           mainMenuPos = 0;
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
@@ -172,7 +166,6 @@ void handleButton(Screen &currentScreen)
         case LOGS_ROOM_TEXT:
           currentScreen = LOGS_TEXT_MENU;
           logsMenuPos = 0;
-          resetMenuCache();
           showScreen(currentScreen);
           break;
         case LOGS_GRAPH_INNER:
@@ -181,13 +174,11 @@ void handleButton(Screen &currentScreen)
         case LOGS_GRAPH_HUMID:
           currentScreen = LOGS_GRAPH_MENU;
           logsMenuPos = 0;
-          resetMenuCache();
           showScreen(currentScreen);
           break;
 
         default:
           currentScreen = MAIN_MENU;
-          resetMenuCache();
           showScreen(currentScreen);
           break;
         }

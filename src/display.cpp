@@ -37,6 +37,7 @@ void initDisplay(LiquidCrystal_I2C *lcdPtr, DallasTemperature *sensorsPtr)
   sensors = sensorsPtr;
   lcd->init();
   lcd->backlight();
+  //lcd->clear();
 }
 
 void setRoomData(float temp, float humidity)
@@ -60,7 +61,6 @@ void drawMenu(const char *title, const char *items[], uint8_t count, uint8_t sel
   static uint8_t lastHighlight = 255;
 
   int8_t top = selected;
-  resetMenuCache();
   if (top != lastTop || lastHighlight != 0)
   {
     lcd->clear();
@@ -229,58 +229,47 @@ void drawRealtime()
 
 void showScreen(Screen screen)
 {
+  resetMenuCache();
   switch (screen)
   {
   case MAIN_MENU:
   {
-    resetMenuCache();
     const char *mainMenuItems[] = {"Realtime", "Logs"};
     drawMenu("Main Menu", mainMenuItems, 2, mainMenuPos);
     break;
   }
   case LOGS_MENU:
-    resetMenuCache();
     drawLogsMenu();
     break;
   case LOGS_TEXT_MENU:
-    resetMenuCache();
     drawLogsTextMenu();
     break;
   case LOGS_GRAPH_MENU:
-    resetMenuCache();
     drawLogsGraphMenu();
     break;
 
   case LOGS_INNER_TEXT:
-    resetMenuCache();
     drawInnerLogs();
     break;
   case LOGS_OUTER_TEXT:
-    resetMenuCache();
     drawOuterLogs();
     break;
   case LOGS_ROOM_TEXT:
-    resetMenuCache();
     drawRoomLogs();
     break;
   case LOGS_GRAPH_INNER:
-    resetMenuCache();
     drawGraphInner();
     break;
   case LOGS_GRAPH_OUTER:
-    resetMenuCache();
     drawGraphOuter();
     break;
   case LOGS_GRAPH_ROOM:
-    resetMenuCache();
     drawGraphRoomTemp();
     break;
   case LOGS_GRAPH_HUMID:
-    resetMenuCache();
     drawGraphHumidity();
     break;
   case REALTIME:
-    resetMenuCache();
     drawRealtime();
     break;
   }
@@ -303,7 +292,7 @@ void updateScreen(Screen screen)
     }
 
     // раз в 1 секунду — обновить экран
-    if (now - lastUpdate > 1000)
+    if (now - lastUpdate > 2000)
     {
       drawRealtime();
       lastUpdate = now;
@@ -311,9 +300,30 @@ void updateScreen(Screen screen)
   }
 }
 
+byte customChars[8][8] = {
+  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // 0: Пусто
+  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x1F}, // 1: ▂
+  {0x00,0x00,0x00,0x00,0x00,0x00,0x1F,0x1F}, // 2: ▃
+  {0x00,0x00,0x00,0x00,0x00,0x1F,0x1F,0x1F}, // 3: ▄
+  {0x00,0x00,0x00,0x00,0x1F,0x1F,0x1F,0x1F}, // 4: ▅
+  {0x00,0x00,0x00,0x1F,0x1F,0x1F,0x1F,0x1F}, // 5: ▆
+  {0x00,0x00,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}, // 6: ▇
+  {0x00,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F,0x1F}  // 7: █
+};
+
 const char *getBar(float value, float minVal, float maxVal)
 {
-  const char *bars[] = {" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
+  //const char *bars[] = {" ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
+  const char *bars[] = {
+  "\x00",
+  "\x01",
+  "\x02", 
+  "\x03",
+  "\x04",
+  "\x05",
+  "\x06",
+  "\x07"
+};
   int level = 0;
   if (maxVal > minVal)
   {

@@ -2,7 +2,7 @@
 #include "logger.h"
 #include <DallasTemperature.h>
 #include <RTClib.h>
-#include "display.h" // добавлен include для геттеров
+#include "display.h"
 #include "config.h"
 
 
