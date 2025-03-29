@@ -102,6 +102,7 @@ void handleButton(Screen &currentScreen)
             currentScreen = MAIN_MENU;
             break;
           }
+          logsMenuPos = 0;
           showScreen(currentScreen);
           break;
 
