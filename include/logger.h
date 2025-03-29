@@ -10,6 +10,7 @@ struct LogEntry {
   float outerTemp;
   float roomTemp;
   float roomHumidity;
+  float roomPressure;
   DateTime timestamp;
 };
 

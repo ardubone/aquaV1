@@ -2,12 +2,16 @@
 #include "logger.h"
 #include <DallasTemperature.h>
 #include <RTClib.h>
+#include <Adafruit_BME280.h>
+
 #include "display.h"
 #include "config.h"
 
 
 extern RTC_DS1307 rtc;
 extern DallasTemperature sensors;
+extern Adafruit_BME280 bme;
+
 
 extern DeviceAddress innerSensorAddr;
 extern DeviceAddress outerSensorAddr;
@@ -33,6 +37,7 @@ void updateTemperatureLog() {
       outerTemp,
       getRoomTemp(),
       getRoomHumidity(),
+      getRoomPressure(),
       now
     };
 

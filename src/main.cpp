@@ -5,8 +5,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP32Encoder.h>
-#include <DHT.h>
+// #include <DHT.h>
 #include <RTClib.h>
+#include <Adafruit_BME280.h>
 
 #include "config.h"
 #include "display.h"
@@ -21,14 +22,15 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 ESP32Encoder encoder;
-DHT dht(DHTPIN, DHTTYPE);
+Adafruit_BME280 bme;
+// DHT dht(DHTPIN, DHTTYPE);
 Screen currentScreen = MAIN_MENU;
 
 void setup()
 {
   Serial.begin(115200);
   delay(200);
-  //Serial.println(F("Setup started"));
+  // Serial.println(F("Setup started"));
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   lcd.init();
@@ -59,7 +61,14 @@ void setup()
   delay(500);
   lcd.backlight();
   delay(500);
-  dht.begin();
+  // dht.begin();
+  if (!bme.begin(0x76))
+  { // Адрес может быть 0x76 или 0x77
+    lcd.clear();
+    lcd.print(F("BME280 not found!"));
+    while (true)
+      ;
+  }
   delay(500);
   sensors.begin();
   if (sensors.getDeviceCount() == 0)
@@ -71,12 +80,14 @@ void setup()
   }
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW); // Начально выключено
   delay(500);
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
   initDisplay(&lcd, &sensors);
   showScreen(currentScreen);
-  //Serial.println(F("all init"));
+  // Serial.println(F("all init"));
 }
 
 void loop()
@@ -92,10 +103,35 @@ void loop()
     lastUpdateFast = millis();
   }
 
+if (currentScreen != SET_TIME_MENU && !relayManualOverride) {
+  DateTime now = rtc.now();
+  int hour = now.hour();
+
+  bool shouldBeOn = (hour >= 8 && hour < 19);
+
+  if (relayState != shouldBeOn) {
+    relayState = shouldBeOn;
+    digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
+    lastRelayToggleTime = now;
+  }
+}
+
+static int lastCheckedDay = -1;
+DateTime now = rtc.now();
+
+if (now.day() != lastCheckedDay) {
+  lastCheckedDay = now.day();
+  relayManualOverride = false;  // Сброс каждый день в полночь
+}
+
+
+
   if (millis() - lastUpdateSlow > 2000)
   {
     updateTemperatureLog();
-    setRoomData(dht.readTemperature(), dht.readHumidity());
+    // setRoomData(dht.readTemperature(), dht.readHumidity());
+    setRoomData(bme.readTemperature(), bme.readHumidity(), (bme.readPressure() / 100.0) * 0.75006);
+
     lastUpdateSlow = millis();
   }
 }

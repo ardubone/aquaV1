@@ -1,12 +1,14 @@
 #include "display.h"
 #include "logger.h"
 #include <Wire.h>
+#include <RTClib.h>
 
 static LiquidCrystal_I2C *lcd;
 static DallasTemperature *sensors;
 
 static float roomTemp = 0.0;
 static float roomHumidity = 0.0;
+static float roomPressure = 0.0;
 static float graphBuffer[100]; // Общий буфер для графиков
 
 static int8_t lastSelected = -1;
@@ -18,10 +20,20 @@ extern int8_t logsMenuPos;
 extern int8_t mainMenuPos;
 extern int16_t logScrollPos;
 
+extern RTC_DS1307 rtc;    // rtc из main.cpp
+extern DateTime tempTime; // глобальная временная переменная
+extern int selectedTimeField;
+
+extern int8_t relayMenuPos;
+extern bool relayState;
+
+extern DateTime lastRelayToggleTime;
+
 void drawGraphInner();
 void drawGraphOuter();
 void drawGraphRoomTemp();
 void drawGraphHumidity();
+void drawGraphPressure();
 
 void resetMenuCache()
 {
@@ -39,10 +51,11 @@ void initDisplay(LiquidCrystal_I2C *lcdPtr, DallasTemperature *sensorsPtr)
   lcd->backlight();
 }
 
-void setRoomData(float temp, float humidity)
+void setRoomData(float temp, float humidity, float pressure)
 {
   roomTemp = temp;
   roomHumidity = humidity;
+  roomPressure = pressure;
 }
 
 void drawFooter(const __FlashStringHelper *text)
@@ -98,14 +111,14 @@ void drawLogsMenu()
 
 void drawLogsTextMenu()
 {
-  const char *items[] = {"Inner Temp", "Outer Temp", "Room Data", "Back"};
-  drawMenu("Text Logs", items, 4, logsMenuPos);
+  const char *items[] = {"Inner Temp", "Outer Temp", "Room Data", "Room Pressure", "Back"};
+  drawMenu("Text Logs", items, 5, logsMenuPos);
 }
 
 void drawLogsGraphMenu()
 {
-  const char *items[] = {"Inner Temp", "Outer Temp", "Room Temp", "Humidity", "Back"};
-  drawMenu("Graph Logs", items, 5, logsMenuPos);
+  const char *items[] = {"Inner Temp", "Outer Temp", "Room Temp", "Humidity", "Room Pressure", "Back"};
+  drawMenu("Graph Logs", items, 6, logsMenuPos);
 }
 
 void drawTimestamp(const DateTime &ts)
@@ -200,30 +213,178 @@ void drawRoomLogs()
   }
 }
 
+void drawPressureLogs()
+{
+  if (logScrollPos != lastLogScroll)
+  {
+    lcd->clear();
+    lcd->setCursor(0, 0);
+    lcd->print(F("Pressure Logs:"));
+    for (uint8_t i = 0; i < 3; i++)
+    {
+      int idx = logScrollPos + i;
+      if (idx < logCount)
+      {
+        lcd->setCursor(0, i + 1);
+        drawTimestamp(temperatureLogs[idx].timestamp);
+        lcd->print(" P:");
+        lcd->print(temperatureLogs[idx].roomPressure, 1);
+      }
+    }
+    drawFooter(F("<Scroll:Encoder>"));
+    lastLogScroll = logScrollPos;
+  }
+}
+
+void drawRelayMenu()
+{
+  lcd->clear();
+  lcd->setCursor(0, 0);
+  lcd->print(F("Relay Control"));
+
+  lcd->setCursor(0, 1);
+  lcd->print(relayMenuPos == 0 ? ">" : " ");
+  lcd->print(F(" Toggle Relay "));
+  lcd->print(relayState ? "[OFF]" : "[ON]");
+
+  lcd->setCursor(0, 2);
+  lcd->print(relayMenuPos == 1 ? ">" : " ");
+  lcd->print(F(" Back"));
+
+  // Строка 3: текущее состояние + время
+lcd->setCursor(0, 3);
+lcd->print(F("State:"));
+lcd->print(relayState ? "ON " : "OFF");
+
+// Время (часы:минуты)
+if (lastRelayToggleTime.hour() < 10) lcd->print("0");
+lcd->print(lastRelayToggleTime.hour());
+lcd->print(":");
+if (lastRelayToggleTime.minute() < 10) lcd->print("0");
+lcd->print(lastRelayToggleTime.minute());
+lcd->print(" ");
+
+// Дата (дд.мм)
+if (lastRelayToggleTime.day() < 10) lcd->print("0");
+lcd->print(lastRelayToggleTime.day());
+lcd->print(".");
+if (lastRelayToggleTime.month() < 10) lcd->print("0");
+lcd->print(lastRelayToggleTime.month());
+
+}
+
 void drawRealtime()
 {
   float inner = sensors->getTempCByIndex(0);
   float outer = sensors->getTempCByIndex(1);
 
+  DateTime now = rtc.now();
+
+  lcd->clear();
+
+  // Строка 0: температуры + иконка времени
+  lcd->setCursor(0, 0);
+  lcd->print(F("I:"));
+  lcd->print(inner, 1);
+  lcd->print(F("C O:"));
+  lcd->print(outer, 1);
+  lcd->print(F("C"));
+
+  lcd->setCursor(17, 0);
+  lcd->print(relayState ? "ON " : "OFF");
+
+  // Строка 1: комната и влажность + время
+  lcd->setCursor(0, 1);
+  lcd->print(F("R:"));
+  lcd->print(roomTemp, 1);
+  lcd->print(F("C H:"));
+  lcd->print(roomHumidity, 0);
+  lcd->print(F("%"));
+
+  lcd->setCursor(14, 1);
+  if (now.hour() < 10)
+    lcd->print("0");
+  lcd->print(now.hour());
+  lcd->print(":");
+  if (now.minute() < 10)
+    lcd->print("0");
+  lcd->print(now.minute());
+
+  // Строка 2: давление + дата
+  lcd->setCursor(0, 2);
+  lcd->print(F("P:"));
+  lcd->print(roomPressure, 1);
+  lcd->print(F("mmHg"));
+
+  lcd->setCursor(14, 2);
+  if (now.day() < 10)
+    lcd->print("0");
+  lcd->print(now.day());
+  lcd->print(".");
+  if (now.month() < 10)
+    lcd->print("0");
+  lcd->print(now.month());
+
+  // Строка 3: подвал
+  drawFooter(F("<Press to return>"));
+}
+
+void drawSetTimeMenu(DateTime &tempTime, int selectedField)
+{
   lcd->clear();
   lcd->setCursor(0, 0);
-  lcd->print(F("Inner Temp: "));
-  lcd->print(inner, 1);
-  lcd->print("C");
+  lcd->print(F("Set Date & Time"));
 
+  // Строка даты
   lcd->setCursor(0, 1);
-  lcd->print(F("Out Temp:   "));
-  lcd->print(outer, 1);
-  lcd->print("C");
+  lcd->print(F("Date: "));
+  if (selectedField == 0)
+    lcd->print(">");
+  else
+    lcd->print(" ");
+  if (tempTime.day() < 10)
+    lcd->print("0");
+  lcd->print(tempTime.day());
+  lcd->print(".");
+  if (selectedField == 1)
+    lcd->print(">");
+  else
+    lcd->print(" ");
+  if (tempTime.month() < 10)
+    lcd->print("0");
+  lcd->print(tempTime.month());
+  lcd->print(".");
+  if (selectedField == 2)
+    lcd->print(">");
+  else
+    lcd->print(" ");
+  lcd->print(tempTime.year());
 
+  // Строка времени
   lcd->setCursor(0, 2);
-  lcd->print(F("Room: "));
-  lcd->print(roomTemp, 1);
-  lcd->print("C ");
-  lcd->print(roomHumidity, 0);
-  lcd->print("%");
+  lcd->print(F("Time: "));
+  if (selectedField == 3)
+    lcd->print(">");
+  else
+    lcd->print(" ");
+  if (tempTime.hour() < 10)
+    lcd->print("0");
+  lcd->print(tempTime.hour());
+  lcd->print(":");
+  if (selectedField == 4)
+    lcd->print(">");
+  else
+    lcd->print(" ");
+  if (tempTime.minute() < 10)
+    lcd->print("0");
+  lcd->print(tempTime.minute());
 
-  drawFooter(F("<Press to return>"));
+  // Инструкция
+  lcd->setCursor(0, 3);
+  if (selectedField < 4)
+    lcd->print(F("<Press:Next Field>"));
+  else
+    lcd->print(F("<Press:Save Time>"));
 }
 
 void showScreen(Screen screen)
@@ -233,8 +394,8 @@ void showScreen(Screen screen)
   {
   case MAIN_MENU:
   {
-    const char *mainMenuItems[] = {"Realtime", "Logs"};
-    drawMenu("Main Menu", mainMenuItems, 2, mainMenuPos);
+    const char *mainMenuItems[] = {"Realtime", "Logs", "Set Time", "Relay Control"};
+    drawMenu("Main Menu", mainMenuItems, 4, mainMenuPos);
     break;
   }
   case LOGS_MENU:
@@ -268,8 +429,22 @@ void showScreen(Screen screen)
   case LOGS_GRAPH_HUMID:
     drawGraphHumidity();
     break;
+  case LOGS_ROOM_PRESSURE:
+    drawPressureLogs();
+    break;
+  case LOGS_GRAPH_PRESSURE:
+    drawGraphPressure();
+    break;
   case REALTIME:
     drawRealtime();
+    break;
+  case SET_TIME_MENU:
+    tempTime = rtc.now();
+    selectedTimeField = 0;
+    drawSetTimeMenu(tempTime, selectedTimeField);
+    break;
+  case RELAY_CONTROL_MENU:
+    drawRelayMenu();
     break;
   }
 }
@@ -300,19 +475,19 @@ void updateScreen(Screen screen)
 }
 
 byte customChars[8][8] = {
-  {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // 0: Пусто
-  {0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x04}, // 1: Линия внизу (0x04 = 00100)
-  {0x00,0x00,0x00,0x00,0x1F,0x00,0x00,0x00}, // 2: Линия в центре
-  {0x00,0x00,0x1F,0x00,0x00,0x00,0x00,0x00}, // 3: Выше центра
-  {0x00,0x1F,0x00,0x00,0x00,0x00,0x00,0x00}, // 4
-  {0x1F,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, // 5
-  {0x00,0x00,0x00,0x00,0x00,0x00,0x1F,0x00}, // 6: Ниже центра
-  {0x00,0x00,0x00,0x1F,0x00,0x00,0x00,0x00}  // 7
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 0: Пусто
+    {0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}, // 1: Линия внизу (0x04 = 00100)
+    {0x00, 0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00}, // 2: Линия в центре
+    {0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00}, // 3: Выше центра
+    {0x00, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 4
+    {0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // 5
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1F, 0x00}, // 6: Ниже центра
+    {0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x00}  // 7
 };
 
 const char *getBar(float value, float minVal, float maxVal)
 {
-  const char* bars[] = {"\x00","\x01","\x02","\x03","\x04","\x05","\x06","\x07"};
+  const char *bars[] = {"\x00", "\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07"};
 
   // int level = 0;
   // if (maxVal > minVal)
@@ -398,6 +573,15 @@ void drawGraphHumidity()
   drawGraphLine("Rh:", graphBuffer, logCount);
 }
 
+void drawGraphPressure()
+{
+  for (int i = 0; i < logCount; i++)
+  {
+    graphBuffer[i] = temperatureLogs[i].roomPressure;
+  }
+  drawGraphLine("P:", graphBuffer, logCount);
+}
+
 float getRoomTemp()
 {
   return roomTemp;
@@ -406,4 +590,9 @@ float getRoomTemp()
 float getRoomHumidity()
 {
   return roomHumidity;
+}
+
+float getRoomPressure()
+{
+  return roomPressure;
 }
