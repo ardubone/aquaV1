@@ -2,6 +2,7 @@
 #include "logger.h"
 #include <Wire.h>
 #include <RTClib.h>
+#include "wifi.h"
 
 static LiquidCrystal_I2C *lcd;
 static DallasTemperature *sensors;
@@ -34,6 +35,7 @@ void drawGraphOuter();
 void drawGraphRoomTemp();
 void drawGraphHumidity();
 void drawGraphPressure();
+void drawWiFiStatus();
 
 void resetMenuCache()
 {
@@ -252,25 +254,28 @@ void drawRelayMenu()
   lcd->print(F(" Back"));
 
   // Строка 3: текущее состояние + время
-lcd->setCursor(0, 3);
-lcd->print(F("State:"));
-lcd->print(relayState ? "ON " : "OFF");
+  lcd->setCursor(0, 3);
+  lcd->print(F("State:"));
+  lcd->print(relayState ? "ON " : "OFF");
 
-// Время (часы:минуты)
-if (lastRelayToggleTime.hour() < 10) lcd->print("0");
-lcd->print(lastRelayToggleTime.hour());
-lcd->print(":");
-if (lastRelayToggleTime.minute() < 10) lcd->print("0");
-lcd->print(lastRelayToggleTime.minute());
-lcd->print(" ");
+  // Время (часы:минуты)
+  if (lastRelayToggleTime.hour() < 10)
+    lcd->print("0");
+  lcd->print(lastRelayToggleTime.hour());
+  lcd->print(":");
+  if (lastRelayToggleTime.minute() < 10)
+    lcd->print("0");
+  lcd->print(lastRelayToggleTime.minute());
+  lcd->print(" ");
 
-// Дата (дд.мм)
-if (lastRelayToggleTime.day() < 10) lcd->print("0");
-lcd->print(lastRelayToggleTime.day());
-lcd->print(".");
-if (lastRelayToggleTime.month() < 10) lcd->print("0");
-lcd->print(lastRelayToggleTime.month());
-
+  // Дата (дд.мм)
+  if (lastRelayToggleTime.day() < 10)
+    lcd->print("0");
+  lcd->print(lastRelayToggleTime.day());
+  lcd->print(".");
+  if (lastRelayToggleTime.month() < 10)
+    lcd->print("0");
+  lcd->print(lastRelayToggleTime.month());
 }
 
 void drawRealtime()
@@ -387,6 +392,26 @@ void drawSetTimeMenu(DateTime &tempTime, int selectedField)
     lcd->print(F("<Press:Save Time>"));
 }
 
+void drawWiFiStatus() {
+  lcd->clear();
+  lcd->setCursor(0, 0);
+  lcd->print(F("Wi-Fi Status:"));
+
+  lcd->setCursor(0, 1);
+  if (isWiFiConnected()) {
+    lcd->print(F("Connected to:"));
+    lcd->setCursor(0, 2);
+    lcd->print(getWiFiSSID());
+
+    lcd->setCursor(0, 3);
+    lcd->print(getWiFiIP());
+  } else {
+    lcd->print(F("Not Connected"));
+  }
+
+  drawFooter(F("<Press to return>"));
+}
+
 void showScreen(Screen screen)
 {
   resetMenuCache();
@@ -394,8 +419,8 @@ void showScreen(Screen screen)
   {
   case MAIN_MENU:
   {
-    const char *mainMenuItems[] = {"Realtime", "Logs", "Set Time", "Relay Control"};
-    drawMenu("Main Menu", mainMenuItems, 4, mainMenuPos);
+    const char *mainMenuItems[] = {"Realtime", "Logs", "Set Time", "Relay Control", "WiFi Status"};
+    drawMenu("Main Menu", mainMenuItems, 5, mainMenuPos);
     break;
   }
   case LOGS_MENU:
@@ -445,6 +470,9 @@ void showScreen(Screen screen)
     break;
   case RELAY_CONTROL_MENU:
     drawRelayMenu();
+    break;
+  case WIFI_STATUS_MENU:
+    drawWiFiStatus();
     break;
   }
 }

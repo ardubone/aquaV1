@@ -37,7 +37,7 @@ void handleEncoder(Screen &currentScreen)
     switch (currentScreen)
     {
     case MAIN_MENU:
-      mainMenuPos = constrain(mainMenuPos + delta, 0, 3);
+      mainMenuPos = constrain(mainMenuPos + delta, 0, 4);
       showScreen(currentScreen);
       break;
 
@@ -73,7 +73,6 @@ void handleEncoder(Screen &currentScreen)
       logScrollPos = constrain(logScrollPos + delta, 0, max(0, logCount - 20));
       showScreen(currentScreen);
       break;
-
     case SET_TIME_MENU:
       switch (selectedTimeField)
       {
@@ -145,6 +144,11 @@ void handleButton(Screen &currentScreen)
           {
             currentScreen = RELAY_CONTROL_MENU;
           }
+          else if (mainMenuPos == 4)
+          {
+            currentScreen = WIFI_STATUS_MENU;
+          }
+
           showScreen(currentScreen);
           break;
 
@@ -277,6 +281,11 @@ void handleButton(Screen &currentScreen)
             mainMenuPos = 0;
           }
           drawRelayMenu();
+          break;
+        case WIFI_STATUS_MENU:
+          currentScreen = MAIN_MENU;
+          mainMenuPos = 0;
+          showScreen(currentScreen);
           break;
 
         default:

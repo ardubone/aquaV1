@@ -5,9 +5,10 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP32Encoder.h>
-// #include <DHT.h>
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
+#include "wifi.h"
+#include <WiFi.h>
 
 #include "config.h"
 #include "display.h"
@@ -23,19 +24,18 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 ESP32Encoder encoder;
 Adafruit_BME280 bme;
-// DHT dht(DHTPIN, DHTTYPE);
 Screen currentScreen = MAIN_MENU;
 
 void setup()
 {
   Serial.begin(115200);
   delay(200);
-  // Serial.println(F("Setup started"));
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   lcd.init();
   lcd.print(F("Loading...."));
   delay(50);
+
   if (!rtc.begin())
   {
     for (int i = 0; i < 5; i++)
@@ -61,9 +61,8 @@ void setup()
   delay(500);
   lcd.backlight();
   delay(500);
-  // dht.begin();
   if (!bme.begin(0x76))
-  { // Адрес может быть 0x76 или 0x77
+  { 
     lcd.clear();
     lcd.print(F("BME280 not found!"));
     while (true)
@@ -83,11 +82,11 @@ void setup()
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, LOW); // Начально выключено
   delay(500);
+  initWiFi();
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
   initDisplay(&lcd, &sensors);
   showScreen(currentScreen);
-  // Serial.println(F("all init"));
 }
 
 void loop()
@@ -129,7 +128,6 @@ if (now.day() != lastCheckedDay) {
   if (millis() - lastUpdateSlow > 2000)
   {
     updateTemperatureLog();
-    // setRoomData(dht.readTemperature(), dht.readHumidity());
     setRoomData(bme.readTemperature(), bme.readHumidity(), (bme.readPressure() / 100.0) * 0.75006);
 
     lastUpdateSlow = millis();

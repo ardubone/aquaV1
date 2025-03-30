@@ -4,7 +4,8 @@
 #include <DallasTemperature.h>
 #include <RTClib.h>
 
-enum Screen {
+enum Screen
+{
   MAIN_MENU,
   REALTIME,
   LOGS_MENU,
@@ -20,17 +21,19 @@ enum Screen {
   LOGS_GRAPH_HUMID,
   LOGS_GRAPH_PRESSURE,
   RELAY_CONTROL_MENU,
-  SET_TIME_MENU
+  SET_TIME_MENU,
+  WIFI_STATUS_MENU
+
 };
 
-void initDisplay(LiquidCrystal_I2C* lcdRef, DallasTemperature* sensorRef);
+void initDisplay(LiquidCrystal_I2C *lcdRef, DallasTemperature *sensorRef);
 void showScreen(Screen screen);
 void updateScreen(Screen screen);
 void setRoomData(float temp, float humidity, float pressure);
 void drawInnerLogs();
 void drawOuterLogs();
 void drawRoomLogs();
-void drawFooter(const __FlashStringHelper* text);
+void drawFooter(const __FlashStringHelper *text);
 void resetMenuCache();
 void drawSetTimeMenu(DateTime &tempTime, int selectedField);
 void drawRelayMenu();
