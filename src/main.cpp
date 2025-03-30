@@ -6,6 +6,7 @@
 #include <DallasTemperature.h>
 #include <ESP32Encoder.h>
 // #include <DHT.h>
+#include <WiFi.h>
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
 
@@ -36,6 +37,8 @@ void setup()
   lcd.init();
   lcd.print(F("Loading...."));
   delay(50);
+  WiFi.mode(WIFI_STA);
+  Serial.println("WiFi OK");
   if (!rtc.begin())
   {
     for (int i = 0; i < 5; i++)
@@ -103,28 +106,29 @@ void loop()
     lastUpdateFast = millis();
   }
 
-if (currentScreen != SET_TIME_MENU && !relayManualOverride) {
-  DateTime now = rtc.now();
-  int hour = now.hour();
+  if (currentScreen != SET_TIME_MENU && !relayManualOverride)
+  {
+    DateTime now = rtc.now();
+    int hour = now.hour();
 
-  bool shouldBeOn = (hour >= 8 && hour < 19);
+    bool shouldBeOn = (hour >= 8 && hour < 19);
 
-  if (relayState != shouldBeOn) {
-    relayState = shouldBeOn;
-    digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
-    lastRelayToggleTime = now;
+    if (relayState != shouldBeOn)
+    {
+      relayState = shouldBeOn;
+      digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
+      lastRelayToggleTime = now;
+    }
   }
-}
 
-static int lastCheckedDay = -1;
-DateTime now = rtc.now();
+  static int lastCheckedDay = -1;
+  DateTime now = rtc.now();
 
-if (now.day() != lastCheckedDay) {
-  lastCheckedDay = now.day();
-  relayManualOverride = false;  // Сброс каждый день в полночь
-}
-
-
+  if (now.day() != lastCheckedDay)
+  {
+    lastCheckedDay = now.day();
+    relayManualOverride = false; // Сброс каждый день в полночь
+  }
 
   if (millis() - lastUpdateSlow > 2000)
   {
