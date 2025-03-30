@@ -4,5 +4,6 @@
 
 void initWiFi();
 bool isWiFiConnected();
-const char* getWiFiSSID();
-const char* getWiFiIP();
+String getWiFiSSID();
+String getWiFiIP();
+

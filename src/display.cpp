@@ -2,7 +2,7 @@
 #include "logger.h"
 #include <Wire.h>
 #include <RTClib.h>
-#include "wifi.h"
+#include "net.h"
 
 static LiquidCrystal_I2C *lcd;
 static DallasTemperature *sensors;
@@ -278,60 +278,133 @@ void drawRelayMenu()
   lcd->print(lastRelayToggleTime.month());
 }
 
+// void drawRealtime()
+// {
+//   float inner = sensors->getTempCByIndex(0);
+//   float outer = sensors->getTempCByIndex(1);
+
+//   DateTime now = rtc.now();
+
+//   lcd->clear();
+
+//   // Строка 0: температуры + иконка времени
+//   lcd->setCursor(0, 0);
+//   lcd->print(F("I:"));
+//   lcd->print(inner, 1);
+//   lcd->print(F("C O:"));
+//   lcd->print(outer, 1);
+//   lcd->print(F("C"));
+
+//   lcd->setCursor(17, 0);
+//   lcd->print(relayState ? "ON " : "OFF");
+
+//   // Строка 1: комната и влажность + время
+//   lcd->setCursor(0, 1);
+//   lcd->print(F("R:"));
+//   lcd->print(roomTemp, 1);
+//   lcd->print(F("C H:"));
+//   lcd->print(roomHumidity, 0);
+//   lcd->print(F("%"));
+
+//   lcd->setCursor(14, 1);
+//   if (now.hour() < 10)
+//     lcd->print("0");
+//   lcd->print(now.hour());
+//   lcd->print(":");
+//   if (now.minute() < 10)
+//     lcd->print("0");
+//   lcd->print(now.minute());
+
+//   // Строка 2: давление + дата
+//   lcd->setCursor(0, 2);
+//   lcd->print(F("P:"));
+//   lcd->print(roomPressure, 1);
+//   lcd->print(F("mmHg"));
+
+//   lcd->setCursor(14, 2);
+//   if (now.day() < 10)
+//     lcd->print("0");
+//   lcd->print(now.day());
+//   lcd->print(".");
+//   if (now.month() < 10)
+//     lcd->print("0");
+//   lcd->print(now.month());
+
+//   // Строка 3: подвал
+//   drawFooter(F("<Press to return>"));
+// }
+
 void drawRealtime()
 {
+  static float lastInner = NAN;
+  static float lastOuter = NAN;
+  static float lastRoomTemp = NAN;
+  static float lastHumidity = NAN;
+  static float lastPressure = NAN;
+  static int lastMinute = -1;
+  static bool lastRelayState = false;
+
   float inner = sensors->getTempCByIndex(0);
   float outer = sensors->getTempCByIndex(1);
-
   DateTime now = rtc.now();
 
-  lcd->clear();
+  if (inner != lastInner || outer != lastOuter ||
+      roomTemp != lastRoomTemp || roomHumidity != lastHumidity ||
+      roomPressure != lastPressure || now.minute() != lastMinute ||
+      relayState != lastRelayState)
+  {
+    lcd->clear();
 
-  // Строка 0: температуры + иконка времени
-  lcd->setCursor(0, 0);
-  lcd->print(F("I:"));
-  lcd->print(inner, 1);
-  lcd->print(F("C O:"));
-  lcd->print(outer, 1);
-  lcd->print(F("C"));
+    lcd->setCursor(0, 0);
+    lcd->print(F("I:"));
+    lcd->print(inner, 1);
+    lcd->print(F("C O:"));
+    lcd->print(outer, 1);
+    lcd->print(F("C"));
+    lcd->setCursor(17, 0);
+    lcd->print(relayState ? "ON " : "OFF");
 
-  lcd->setCursor(17, 0);
-  lcd->print(relayState ? "ON " : "OFF");
+    lcd->setCursor(0, 1);
+    lcd->print(F("R:"));
+    lcd->print(roomTemp, 1);
+    lcd->print(F("C H:"));
+    lcd->print(roomHumidity, 0);
+    lcd->print(F("%"));
+    lcd->setCursor(14, 1);
+    if (now.hour() < 10)
+      lcd->print("0");
+    lcd->print(now.hour());
+    lcd->print(":");
+    if (now.minute() < 10)
+      lcd->print("0");
+    lcd->print(now.minute());
 
-  // Строка 1: комната и влажность + время
-  lcd->setCursor(0, 1);
-  lcd->print(F("R:"));
-  lcd->print(roomTemp, 1);
-  lcd->print(F("C H:"));
-  lcd->print(roomHumidity, 0);
-  lcd->print(F("%"));
+    lcd->setCursor(0, 2);
+    lcd->print(F("P:"));
+    lcd->print(roomPressure, 1);
+    lcd->print(F("mmHg"));
+    lcd->setCursor(14, 2);
+    if (now.day() < 10)
+      lcd->print("0");
+    lcd->print(now.day());
+    lcd->print(".");
+    if (now.month() < 10)
+      lcd->print("0");
+    lcd->print(now.month());
 
-  lcd->setCursor(14, 1);
-  if (now.hour() < 10)
-    lcd->print("0");
-  lcd->print(now.hour());
-  lcd->print(":");
-  if (now.minute() < 10)
-    lcd->print("0");
-  lcd->print(now.minute());
+    lcd->setCursor(0, 3);
+    lcd->print(F("IP: "));
+    lcd->print(getWiFiIP());
 
-  // Строка 2: давление + дата
-  lcd->setCursor(0, 2);
-  lcd->print(F("P:"));
-  lcd->print(roomPressure, 1);
-  lcd->print(F("mmHg"));
-
-  lcd->setCursor(14, 2);
-  if (now.day() < 10)
-    lcd->print("0");
-  lcd->print(now.day());
-  lcd->print(".");
-  if (now.month() < 10)
-    lcd->print("0");
-  lcd->print(now.month());
-
-  // Строка 3: подвал
-  drawFooter(F("<Press to return>"));
+    // Обновляем кэш
+    lastInner = inner;
+    lastOuter = outer;
+    lastRoomTemp = roomTemp;
+    lastHumidity = roomHumidity;
+    lastPressure = roomPressure;
+    lastMinute = now.minute();
+    lastRelayState = relayState;
+  }
 }
 
 void drawSetTimeMenu(DateTime &tempTime, int selectedField)
@@ -392,24 +465,31 @@ void drawSetTimeMenu(DateTime &tempTime, int selectedField)
     lcd->print(F("<Press:Save Time>"));
 }
 
-void drawWiFiStatus() {
+void drawWiFiStatus()
+{
   lcd->clear();
-  lcd->setCursor(0, 0);
-  lcd->print(F("Wi-Fi Status:"));
 
-  lcd->setCursor(0, 1);
-  if (isWiFiConnected()) {
-    lcd->print(F("Connected to:"));
-    lcd->setCursor(0, 2);
+  if (isWiFiConnected())
+  {
+    lcd->setCursor(0, 0);
+    lcd->print(F("Wi-Fi: Connected"));
+
+    lcd->setCursor(0, 1);
+    lcd->print(F("SSID: "));
     lcd->print(getWiFiSSID());
 
-    lcd->setCursor(0, 3);
+    lcd->setCursor(0, 2);
+    lcd->print(F("IP: "));
     lcd->print(getWiFiIP());
-  } else {
-    lcd->print(F("Not Connected"));
+  }
+  else
+  {
+    lcd->setCursor(0, 0);
+    lcd->print(F("Wi-Fi: Not Connected"));
   }
 
-  drawFooter(F("<Press to return>"));
+  lcd->setCursor(0, 3);
+  lcd->print(F("<Press to return>"));
 }
 
 void showScreen(Screen screen)

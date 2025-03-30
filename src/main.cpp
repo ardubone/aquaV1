@@ -5,10 +5,10 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP32Encoder.h>
+#include <WiFi.h>
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
-#include "wifi.h"
-#include <WiFi.h>
+#include "net.h"
 
 #include "config.h"
 #include "display.h"

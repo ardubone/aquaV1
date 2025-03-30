@@ -1,5 +1,5 @@
-#include "wifi.h"
 #include <WiFi.h>
+#include "net.h"
 #include "secrets.h"
 
 void initWiFi() {
@@ -18,10 +18,10 @@ bool isWiFiConnected() {
   return WiFi.status() == WL_CONNECTED;
 }
 
-const char* getWiFiSSID() {
-  return WiFi.SSID().c_str();
+String getWiFiSSID() {
+  return WiFi.SSID();
 }
 
-const char* getWiFiIP() {
-  return WiFi.localIP().toString().c_str();
+String getWiFiIP() {
+  return WiFi.localIP().toString();
 }
