@@ -1,8 +1,11 @@
-#include "display.h"
-#include "logger.h"
 #include <Wire.h>
 #include <RTClib.h>
+
+#include "display.h"
+#include "logger.h"
 #include "net.h"
+
+#include <functional>
 
 static LiquidCrystal_I2C *lcd;
 static DallasTemperature *sensors;
@@ -21,8 +24,8 @@ extern int8_t logsMenuPos;
 extern int8_t mainMenuPos;
 extern int16_t logScrollPos;
 
-extern RTC_DS1307 rtc;    // rtc из main.cpp
-extern DateTime tempTime; // глобальная временная переменная
+extern RTC_DS1307 rtc;
+extern DateTime tempTime;
 extern int selectedTimeField;
 
 extern int8_t relayMenuPos;
@@ -36,6 +39,7 @@ void drawGraphRoomTemp();
 void drawGraphHumidity();
 void drawGraphPressure();
 void drawWiFiStatus();
+
 
 void resetMenuCache()
 {
@@ -58,6 +62,28 @@ void setRoomData(float temp, float humidity, float pressure)
   roomTemp = temp;
   roomHumidity = humidity;
   roomPressure = pressure;
+}
+
+void printDate(LiquidCrystal_I2C *lcd, const DateTime &dt)
+{
+  if (dt.day() < 10)
+    lcd->print("0");
+  lcd->print(dt.day());
+  lcd->print(".");
+  if (dt.month() < 10)
+    lcd->print("0");
+  lcd->print(dt.month());
+}
+
+void printTime(LiquidCrystal_I2C *lcd, const DateTime &dt)
+{
+  if (dt.hour() < 10)
+    lcd->print("0");
+  lcd->print(dt.hour());
+  lcd->print(":");
+  if (dt.minute() < 10)
+    lcd->print("0");
+  lcd->print(dt.minute());
 }
 
 void drawFooter(const __FlashStringHelper *text)
@@ -126,40 +152,30 @@ void drawLogsGraphMenu()
 void drawTimestamp(const DateTime &ts)
 {
   lcd->print("[");
-  if (ts.day() < 10)
-    lcd->print("0");
-  lcd->print(ts.day());
-  lcd->print(".");
-  if (ts.month() < 10)
-    lcd->print("0");
-  lcd->print(ts.month());
+  printDate(lcd, ts);
   lcd->print(" ");
-  if (ts.hour() < 10)
-    lcd->print("0");
-  lcd->print(ts.hour());
-  lcd->print(":");
-  if (ts.minute() < 10)
-    lcd->print("0");
-  lcd->print(ts.minute());
+  printTime(lcd, ts);
   lcd->print("]");
 }
 
-void drawInnerLogs()
-{
-  if (logScrollPos != lastLogScroll)
-  {
+void drawGenericLogs(
+  const char* title,
+  const char* valuePrefix,
+  std::function<void(LogEntry&, String&)> valueExtractor
+) {
+  if (logScrollPos != lastLogScroll) {
     lcd->clear();
     lcd->setCursor(0, 0);
-    lcd->print(F("Inner Temp Logs:"));
-    for (uint8_t i = 0; i < 3; i++)
-    {
+    lcd->print(title);
+    for (uint8_t i = 0; i < 3; i++) {
       int idx = logScrollPos + i;
-      if (idx < logCount)
-      {
+      if (idx < logCount) {
         lcd->setCursor(0, i + 1);
         drawTimestamp(temperatureLogs[idx].timestamp);
-        lcd->print(" I:");
-        lcd->print(temperatureLogs[idx].innerTemp, 1);
+        lcd->print(valuePrefix);
+        String valueStr;
+        valueExtractor(temperatureLogs[idx], valueStr);
+        lcd->print(valueStr);
       }
     }
     drawFooter(F("<Scroll:Encoder>"));
@@ -167,76 +183,33 @@ void drawInnerLogs()
   }
 }
 
-void drawOuterLogs()
-{
-  if (logScrollPos != lastLogScroll)
-  {
-    lcd->clear();
-    lcd->setCursor(0, 0);
-    lcd->print(F("Outer Temp Logs:"));
-    for (uint8_t i = 0; i < 3; i++)
-    {
-      int idx = logScrollPos + i;
-      if (idx < logCount)
-      {
-        lcd->setCursor(0, i + 1);
-        drawTimestamp(temperatureLogs[idx].timestamp);
-        lcd->print(" O:");
-        lcd->print(temperatureLogs[idx].outerTemp, 1);
-      }
-    }
-    drawFooter(F("<Scroll:Encoder>"));
-    lastLogScroll = logScrollPos;
-  }
+
+void drawInnerLogs() {
+  drawGenericLogs("Inner Temp Logs:", " I:", [](LogEntry& log, String& out) {
+    out = String(log.innerTemp, 1);
+  });
 }
 
-void drawRoomLogs()
-{
-  if (logScrollPos != lastLogScroll)
-  {
-    lcd->clear();
-    lcd->setCursor(0, 0);
-    lcd->print(F("Room Data Logs:"));
-    for (uint8_t i = 0; i < 3; i++)
-    {
-      int idx = logScrollPos + i;
-      if (idx < logCount)
-      {
-        lcd->setCursor(0, i + 1);
-        drawTimestamp(temperatureLogs[idx].timestamp);
-        lcd->print(" Rt:");
-        lcd->print(temperatureLogs[idx].roomTemp, 1);
-        lcd->print(" Rh:");
-        lcd->print(temperatureLogs[idx].roomHumidity, 0);
-      }
-    }
-    drawFooter(F("<Scroll:Encoder>"));
-    lastLogScroll = logScrollPos;
-  }
+
+void drawOuterLogs() {
+  drawGenericLogs("Outer Temp Logs:", " O:", [](LogEntry& log, String& out) {
+    out = String(log.outerTemp, 1);
+  });
 }
 
-void drawPressureLogs()
-{
-  if (logScrollPos != lastLogScroll)
-  {
-    lcd->clear();
-    lcd->setCursor(0, 0);
-    lcd->print(F("Pressure Logs:"));
-    for (uint8_t i = 0; i < 3; i++)
-    {
-      int idx = logScrollPos + i;
-      if (idx < logCount)
-      {
-        lcd->setCursor(0, i + 1);
-        drawTimestamp(temperatureLogs[idx].timestamp);
-        lcd->print(" P:");
-        lcd->print(temperatureLogs[idx].roomPressure, 1);
-      }
-    }
-    drawFooter(F("<Scroll:Encoder>"));
-    lastLogScroll = logScrollPos;
-  }
+void drawRoomLogs() {
+  drawGenericLogs("Room Data Logs:", " Rt:", [](LogEntry& log, String& out) {
+    out = String(log.roomTemp, 1) + " Rh:" + String(log.roomHumidity, 0);
+  });
 }
+
+
+void drawPressureLogs() {
+  drawGenericLogs("Pressure Logs:", " P:", [](LogEntry& log, String& out) {
+    out = String(log.roomPressure, 1);
+  });
+}
+
 
 void drawRelayMenu()
 {
@@ -253,86 +226,13 @@ void drawRelayMenu()
   lcd->print(relayMenuPos == 1 ? ">" : " ");
   lcd->print(F(" Back"));
 
-  // Строка 3: текущее состояние + время
   lcd->setCursor(0, 3);
   lcd->print(F("State:"));
   lcd->print(relayState ? "ON " : "OFF");
-
-  // Время (часы:минуты)
-  if (lastRelayToggleTime.hour() < 10)
-    lcd->print("0");
-  lcd->print(lastRelayToggleTime.hour());
-  lcd->print(":");
-  if (lastRelayToggleTime.minute() < 10)
-    lcd->print("0");
-  lcd->print(lastRelayToggleTime.minute());
+  printTime(lcd, lastRelayToggleTime);
   lcd->print(" ");
-
-  // Дата (дд.мм)
-  if (lastRelayToggleTime.day() < 10)
-    lcd->print("0");
-  lcd->print(lastRelayToggleTime.day());
-  lcd->print(".");
-  if (lastRelayToggleTime.month() < 10)
-    lcd->print("0");
-  lcd->print(lastRelayToggleTime.month());
+  printDate(lcd, lastRelayToggleTime);
 }
-
-// void drawRealtime()
-// {
-//   float inner = sensors->getTempCByIndex(0);
-//   float outer = sensors->getTempCByIndex(1);
-
-//   DateTime now = rtc.now();
-
-//   lcd->clear();
-
-//   // Строка 0: температуры + иконка времени
-//   lcd->setCursor(0, 0);
-//   lcd->print(F("I:"));
-//   lcd->print(inner, 1);
-//   lcd->print(F("C O:"));
-//   lcd->print(outer, 1);
-//   lcd->print(F("C"));
-
-//   lcd->setCursor(17, 0);
-//   lcd->print(relayState ? "ON " : "OFF");
-
-//   // Строка 1: комната и влажность + время
-//   lcd->setCursor(0, 1);
-//   lcd->print(F("R:"));
-//   lcd->print(roomTemp, 1);
-//   lcd->print(F("C H:"));
-//   lcd->print(roomHumidity, 0);
-//   lcd->print(F("%"));
-
-//   lcd->setCursor(14, 1);
-//   if (now.hour() < 10)
-//     lcd->print("0");
-//   lcd->print(now.hour());
-//   lcd->print(":");
-//   if (now.minute() < 10)
-//     lcd->print("0");
-//   lcd->print(now.minute());
-
-//   // Строка 2: давление + дата
-//   lcd->setCursor(0, 2);
-//   lcd->print(F("P:"));
-//   lcd->print(roomPressure, 1);
-//   lcd->print(F("mmHg"));
-
-//   lcd->setCursor(14, 2);
-//   if (now.day() < 10)
-//     lcd->print("0");
-//   lcd->print(now.day());
-//   lcd->print(".");
-//   if (now.month() < 10)
-//     lcd->print("0");
-//   lcd->print(now.month());
-
-//   // Строка 3: подвал
-//   drawFooter(F("<Press to return>"));
-// }
 
 void drawRealtime()
 {
@@ -371,26 +271,14 @@ void drawRealtime()
     lcd->print(roomHumidity, 0);
     lcd->print(F("%"));
     lcd->setCursor(14, 1);
-    if (now.hour() < 10)
-      lcd->print("0");
-    lcd->print(now.hour());
-    lcd->print(":");
-    if (now.minute() < 10)
-      lcd->print("0");
-    lcd->print(now.minute());
+    printTime(lcd, now);
 
     lcd->setCursor(0, 2);
     lcd->print(F("P:"));
     lcd->print(roomPressure, 1);
     lcd->print(F("mmHg"));
     lcd->setCursor(14, 2);
-    if (now.day() < 10)
-      lcd->print("0");
-    lcd->print(now.day());
-    lcd->print(".");
-    if (now.month() < 10)
-      lcd->print("0");
-    lcd->print(now.month());
+    printDate(lcd, now);
 
     lcd->setCursor(0, 3);
     lcd->print(F("IP: "));
@@ -597,15 +485,7 @@ const char *getBar(float value, float minVal, float maxVal)
 {
   const char *bars[] = {"\x00", "\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07"};
 
-  // int level = 0;
-  // if (maxVal > minVal)
-  // {
-  //   float norm = (value - minVal) / (maxVal - minVal);
-  //   level = constrain((int)(norm * 7), 0, 7);
-  // }
-
-  // Рассчитываем позицию линии с шагом 1 градус
-  int totalSteps = 7; // 7 доступных уровней для линии
+  int totalSteps = 7;
   int step = constrain(value - minVal, 0, maxVal - minVal);
   int level = map(step, 0, maxVal - minVal, 0, totalSteps);
 

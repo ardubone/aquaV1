@@ -14,6 +14,8 @@
 #include "display.h"
 #include "logger.h"
 #include "controls.h"
+#include "web_server.h"
+
 
 DeviceAddress innerSensorAddr = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
 DeviceAddress outerSensorAddr = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
@@ -85,6 +87,8 @@ void setup()
   initWiFi();
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
+  setupWebServer();
+
   initDisplay(&lcd, &sensors);
   showScreen(currentScreen);
 }
@@ -123,6 +127,7 @@ if (now.day() != lastCheckedDay) {
   relayManualOverride = false;  // Сброс каждый день в полночь
 }
 
+handleWebRequests();
 
 
   if (millis() - lastUpdateSlow > 2000)

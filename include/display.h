@@ -3,6 +3,9 @@
 #include <LiquidCrystal_I2C.h>
 #include <DallasTemperature.h>
 #include <RTClib.h>
+#include <functional>
+
+#include "logger.h"
 
 enum Screen
 {
@@ -37,6 +40,14 @@ void drawFooter(const __FlashStringHelper *text);
 void resetMenuCache();
 void drawSetTimeMenu(DateTime &tempTime, int selectedField);
 void drawRelayMenu();
+void printDate(LiquidCrystal_I2C* lcd, const DateTime& dt);
+void printTime(LiquidCrystal_I2C* lcd, const DateTime& dt);
+void drawGenericLogs(
+  const char* title,
+  const char* valuePrefix,
+  std::function<void(LogEntry&, String&)> valueExtractor
+);
+
 
 float getRoomTemp();
 float getRoomHumidity();
