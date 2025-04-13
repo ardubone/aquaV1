@@ -10,6 +10,8 @@ extern bool relayState;
 extern DateTime lastRelayToggleTime;
 extern RTC_DS1307 rtc;
 extern bool relayManualOverride;
+extern uint8_t relayOnHour;
+extern uint8_t relayOffHour;
 
 // Прототипы
 String htmlHeader(const String &title);
@@ -24,6 +26,8 @@ void handleRelayOff();
 void handleSetTimePage();
 void handleSetTime();
 void handleWiFiStatusPage();
+void handleSetRelayTimePage();
+void handleSetRelayTime();
 
 // Структура для времени реле
 struct RelayTime {
@@ -94,24 +98,34 @@ void handleAutoOff()
     server.send(303);
 }
 
-void handleMainPage()
-{
-    String html = htmlHeader("Главная");
-    
-    // Навигация
-    html += "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
+// Добавляю функцию генерации меню
+String generateNavMenu(const String& activePage = "") {
+    String html = "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
     html += "<div class=\"container-fluid\">\n";
     html += "<a class=\"navbar-brand\" href=\"/\"><i class=\"bi bi-house-door\"></i> Главная</a>\n";
     html += "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">\n";
     html += "<span class=\"navbar-toggler-icon\"></span></button>\n";
     html += "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">\n";
     html += "<ul class=\"navbar-nav\">\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/settime\"><i class=\"bi bi-clock\"></i> Время</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/wifi\"><i class=\"bi bi-wifi\"></i> WiFi</a></li>\n";
+    
+    String activeClass = " active";
+    String emptyClass = "";
+    
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "logs" ? activeClass : emptyClass) + "\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "graph" ? activeClass : emptyClass) + "\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "settime" ? activeClass : emptyClass) + "\" href=\"/settime\"><i class=\"bi bi-clock\"></i> Время</a></li>\n";
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "setrelaytime" ? activeClass : emptyClass) + "\" href=\"/setrelaytime\"><i class=\"bi bi-power\"></i> Время реле</a></li>\n";
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "wifi" ? activeClass : emptyClass) + "\" href=\"/wifi\"><i class=\"bi bi-wifi\"></i> WiFi</a></li>\n";
+    
     html += "</ul></div></div></nav>\n";
+    return html;
+}
 
+void handleMainPage()
+{
+    String html = htmlHeader("Главная страница");
+    html += generateNavMenu();
+    
     // Основная информация
     html += "<div class=\"row\">\n";
     
@@ -174,19 +188,8 @@ void handleMainPage()
 void handleLogsPage()
 {
     String html = htmlHeader("Логи");
+    html += generateNavMenu("logs");
     
-    // Навигация
-    html += "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
-    html += "<div class=\"container-fluid\">\n";
-    html += "<a class=\"navbar-brand\" href=\"/\"><i class=\"bi bi-house-door\"></i> Главная</a>\n";
-    html += "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">\n";
-    html += "<span class=\"navbar-toggler-icon\"></span></button>\n";
-    html += "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">\n";
-    html += "<ul class=\"navbar-nav\">\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link active\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
-    html += "</ul></div></div></nav>\n";
-
     // Таблица логов
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header bg-primary text-white\"><i class=\"bi bi-table\"></i> История измерений</div>\n";
@@ -232,19 +235,8 @@ void handleLogsPage()
 void handleGraphPage(String type, const String &label, const String &color)
 {
     String html = htmlHeader("График " + label);
+    html += generateNavMenu("graph");
     
-    // Навигация
-    html += "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
-    html += "<div class=\"container-fluid\">\n";
-    html += "<a class=\"navbar-brand\" href=\"/\"><i class=\"bi bi-house-door\"></i> Главная</a>\n";
-    html += "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">\n";
-    html += "<span class=\"navbar-toggler-icon\"></span></button>\n";
-    html += "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">\n";
-    html += "<ul class=\"navbar-nav\">\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link active\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
-    html += "</ul></div></div></nav>\n";
-
     // Выбор датчика
     html += "<div class=\"card mb-4\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-graph-up\"></i> Выбор датчика</div>\n";
@@ -391,19 +383,8 @@ void handleRelayOff()
 void handleSetTimePage()
 {
     String html = htmlHeader("Установка времени");
+    html += generateNavMenu("settime");
     
-    // Навигация
-    html += "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
-    html += "<div class=\"container-fluid\">\n";
-    html += "<a class=\"navbar-brand\" href=\"/\"><i class=\"bi bi-house-door\"></i> Главная</a>\n";
-    html += "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">\n";
-    html += "<span class=\"navbar-toggler-icon\"></span></button>\n";
-    html += "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">\n";
-    html += "<ul class=\"navbar-nav\">\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
-    html += "</ul></div></div></nav>\n";
-
     // Форма установки времени
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-clock\"></i> Установка времени</div>\n";
@@ -456,19 +437,8 @@ void handleSetTime()
 void handleWiFiStatusPage()
 {
     String html = htmlHeader("Статус WiFi");
+    html += generateNavMenu("wifi");
     
-    // Навигация
-    html += "<nav class=\"navbar navbar-expand-lg navbar-dark rounded mb-4\">\n";
-    html += "<div class=\"container-fluid\">\n";
-    html += "<a class=\"navbar-brand\" href=\"/\"><i class=\"bi bi-house-door\"></i> Главная</a>\n";
-    html += "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">\n";
-    html += "<span class=\"navbar-toggler-icon\"></span></button>\n";
-    html += "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">\n";
-    html += "<ul class=\"navbar-nav\">\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/logs\"><i class=\"bi bi-journal-text\"></i> Логи</a></li>\n";
-    html += "<li class=\"nav-item\"><a class=\"nav-link\" href=\"/graph\"><i class=\"bi bi-graph-up\"></i> Графики</a></li>\n";
-    html += "</ul></div></div></nav>\n";
-
     // Статус WiFi
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-wifi\"></i> Статус WiFi</div>\n";
@@ -492,6 +462,42 @@ void handleWiFiStatusPage()
     server.send(200, "text/html", html);
 }
 
+void handleSetRelayTimePage() {
+    String html = htmlHeader("Установка времени реле");
+    html += generateNavMenu("setrelaytime");
+    
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-clock\"></i> Установка времени реле</div>\n";
+    html += "<div class=\"card-body\">\n";
+    html += "<form action=\"/setrelaytime\" method=\"POST\">\n";
+    
+    html += "<div class=\"mb-3\">\n";
+    html += "<label class=\"form-label\">Время включения</label>\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"onHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(relayOnHour) + "\">\n";
+    html += "</div>\n";
+    
+    html += "<div class=\"mb-3\">\n";
+    html += "<label class=\"form-label\">Время выключения</label>\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"offHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(relayOffHour) + "\">\n";
+    html += "</div>\n";
+    
+    html += "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-save\"></i> Сохранить</button>\n";
+    html += "</form></div></div>\n";
+
+    html += htmlFooter();
+    server.send(200, "text/html", html);
+}
+
+void handleSetRelayTime() {
+    if (server.hasArg("onHour") && server.hasArg("offHour")) {
+        relayOnHour = server.arg("onHour").toInt();
+        relayOffHour = server.arg("offHour").toInt();
+    }
+    
+    server.sendHeader("Location", "/setrelaytime");
+    server.send(303);
+}
+
 void setupWebServer()
 {
     server.on("/", handleMainPage);
@@ -509,6 +515,8 @@ void setupWebServer()
     server.on("/relay/auto/off", handleAutoOff);
     server.on("/settime", HTTP_GET, handleSetTimePage);
     server.on("/settime", HTTP_POST, handleSetTime);
+    server.on("/setrelaytime", HTTP_GET, handleSetRelayTimePage);
+    server.on("/setrelaytime", HTTP_POST, handleSetRelayTime);
     server.on("/wifi", handleWiFiStatusPage);
 
     server.begin();

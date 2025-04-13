@@ -20,6 +20,10 @@
 DeviceAddress tank20SensorAddr = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
 DeviceAddress tank10SensorAddr = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
 
+// Инициализация времени реле
+uint8_t relayOnHour = 8;
+uint8_t relayOffHour = 19;
+
 RTC_DS1307 rtc;
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 OneWire oneWire(ONE_WIRE_BUS);
@@ -110,7 +114,7 @@ if (currentScreen != SET_TIME_MENU && !relayManualOverride) {
   DateTime now = rtc.now();
   int hour = now.hour();
 
-  bool shouldBeOn = (hour >= 8 && hour < 19);
+  bool shouldBeOn = (hour >= relayOnHour && hour < relayOffHour);
 
   if (relayState != shouldBeOn) {
     relayState = shouldBeOn;
