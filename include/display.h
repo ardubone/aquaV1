@@ -52,3 +52,5 @@ void drawGraphTank10();
 float getRoomTemp();
 float getRoomHumidity();
 float getRoomPressure();
+float getTank20Temp();
+float getTank10Temp();

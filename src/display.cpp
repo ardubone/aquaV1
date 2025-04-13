@@ -566,6 +566,16 @@ float getRoomPressure()
   return roomPressure;
 }
 
+float getTank20Temp()
+{
+  return sensors->getTempCByIndex(0);
+}
+
+float getTank10Temp()
+{
+  return sensors->getTempCByIndex(1);
+}
+
 void drawGraphTank20()
 {
   for (int i = 0; i < logCount; i++)
