@@ -13,8 +13,8 @@ extern DallasTemperature sensors;
 extern Adafruit_BME280 bme;
 
 
-extern DeviceAddress innerSensorAddr;
-extern DeviceAddress outerSensorAddr;
+extern DeviceAddress tank20SensorAddr;
+extern DeviceAddress tank10SensorAddr;
 
 LogEntry temperatureLogs[MAX_LOGS];
 byte logCount = 0;
@@ -23,8 +23,8 @@ static unsigned long lastLogTime = millis();
 void updateTemperatureLog() {
   if (millis() - lastLogTime >= 30000) {
     sensors.requestTemperatures();
-    float innerTemp = sensors.getTempC(innerSensorAddr);
-    float outerTemp = sensors.getTempC(outerSensorAddr);
+    float tank20Temp = sensors.getTempC(tank20SensorAddr);
+    float tank10Temp = sensors.getTempC(tank10SensorAddr);
 
     if (logCount >= 15) {
       memmove(&temperatureLogs[0], &temperatureLogs[1], sizeof(LogEntry) * (MAX_LOGS - 1));
@@ -33,8 +33,8 @@ void updateTemperatureLog() {
 
     DateTime now = rtc.now();
     temperatureLogs[logCount++] = {
-      innerTemp,
-      outerTemp,
+      tank20Temp,
+      tank10Temp,
       getRoomTemp(),
       getRoomHumidity(),
       getRoomPressure(),

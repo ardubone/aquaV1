@@ -6,8 +6,8 @@
 #define MAX_LOGS 15
 
 struct LogEntry {
-  float innerTemp;
-  float outerTemp;
+  float tank20Temp;
+  float tank10Temp;
   float roomTemp;
   float roomHumidity;
   float roomPressure;

@@ -139,13 +139,13 @@ void drawLogsMenu()
 
 void drawLogsTextMenu()
 {
-  const char *items[] = {"Inner Temp", "Outer Temp", "Room Data", "Room Pressure", "Back"};
+  const char *items[] = {"Tank20 Temp", "Tank10 Temp", "Room Data", "Room Pressure", "Back"};
   drawMenu("Text Logs", items, 5, logsMenuPos);
 }
 
 void drawLogsGraphMenu()
 {
-  const char *items[] = {"Inner Temp", "Outer Temp", "Room Temp", "Humidity", "Room Pressure", "Back"};
+  const char *items[] = {"Tank20 Temp", "Tank10 Temp", "Room Temp", "Humidity", "Room Pressure", "Back"};
   drawMenu("Graph Logs", items, 6, logsMenuPos);
 }
 
@@ -184,16 +184,15 @@ void drawGenericLogs(
 }
 
 
-void drawInnerLogs() {
-  drawGenericLogs("Inner Temp Logs:", " I:", [](LogEntry& log, String& out) {
-    out = String(log.innerTemp, 1);
+void drawTank20Logs() {
+  drawGenericLogs("Tank20 Temp Logs:", " T20:", [](LogEntry& log, String& out) {
+    out = String(log.tank20Temp, 1);
   });
 }
 
-
-void drawOuterLogs() {
-  drawGenericLogs("Outer Temp Logs:", " O:", [](LogEntry& log, String& out) {
-    out = String(log.outerTemp, 1);
+void drawTank10Logs() {
+  drawGenericLogs("Tank10 Temp Logs:", " T10:", [](LogEntry& log, String& out) {
+    out = String(log.tank10Temp, 1);
   });
 }
 
@@ -236,19 +235,19 @@ void drawRelayMenu()
 
 void drawRealtime()
 {
-  static float lastInner = NAN;
-  static float lastOuter = NAN;
+  static float lastTank20 = NAN;
+  static float lastTank10 = NAN;
   static float lastRoomTemp = NAN;
   static float lastHumidity = NAN;
   static float lastPressure = NAN;
   static int lastMinute = -1;
   static bool lastRelayState = false;
 
-  float inner = sensors->getTempCByIndex(0);
-  float outer = sensors->getTempCByIndex(1);
+  float tank20 = sensors->getTempCByIndex(0);
+  float tank10 = sensors->getTempCByIndex(1);
   DateTime now = rtc.now();
 
-  if (inner != lastInner || outer != lastOuter ||
+  if (tank20 != lastTank20 || tank10 != lastTank10 ||
       roomTemp != lastRoomTemp || roomHumidity != lastHumidity ||
       roomPressure != lastPressure || now.minute() != lastMinute ||
       relayState != lastRelayState)
@@ -257,9 +256,9 @@ void drawRealtime()
 
     lcd->setCursor(0, 0);
     lcd->print(F("I:"));
-    lcd->print(inner, 1);
+    lcd->print(tank20, 1);
     lcd->print(F("C O:"));
-    lcd->print(outer, 1);
+    lcd->print(tank10, 1);
     lcd->print(F("C"));
     lcd->setCursor(17, 0);
     lcd->print(relayState ? "ON " : "OFF");
@@ -285,8 +284,8 @@ void drawRealtime()
     lcd->print(getWiFiIP());
 
     // Обновляем кэш
-    lastInner = inner;
-    lastOuter = outer;
+    lastTank20 = tank20;
+    lastTank10 = tank10;
     lastRoomTemp = roomTemp;
     lastHumidity = roomHumidity;
     lastPressure = roomPressure;
@@ -401,20 +400,20 @@ void showScreen(Screen screen)
     drawLogsGraphMenu();
     break;
 
-  case LOGS_INNER_TEXT:
-    drawInnerLogs();
+  case LOGS_TANK20_TEXT:
+    drawTank20Logs();
     break;
-  case LOGS_OUTER_TEXT:
-    drawOuterLogs();
+  case LOGS_TANK10_TEXT:
+    drawTank10Logs();
     break;
   case LOGS_ROOM_TEXT:
     drawRoomLogs();
     break;
-  case LOGS_GRAPH_INNER:
-    drawGraphInner();
+  case LOGS_GRAPH_TANK20:
+    drawGraphTank20();
     break;
-  case LOGS_GRAPH_OUTER:
-    drawGraphOuter();
+  case LOGS_GRAPH_TANK10:
+    drawGraphTank10();
     break;
   case LOGS_GRAPH_ROOM:
     drawGraphRoomTemp();
@@ -525,24 +524,6 @@ void drawGraphLine(const char *label, float values[], int count)
   drawFooter(F("<Press to return>"));
 }
 
-void drawGraphInner()
-{
-  for (int i = 0; i < logCount; i++)
-  {
-    graphBuffer[i] = temperatureLogs[i].innerTemp;
-  }
-  drawGraphLine("I:", graphBuffer, logCount);
-}
-
-void drawGraphOuter()
-{
-  for (int i = 0; i < logCount; i++)
-  {
-    graphBuffer[i] = temperatureLogs[i].outerTemp;
-  }
-  drawGraphLine("O:", graphBuffer, logCount);
-}
-
 void drawGraphRoomTemp()
 {
   for (int i = 0; i < logCount; i++)
@@ -583,4 +564,22 @@ float getRoomHumidity()
 float getRoomPressure()
 {
   return roomPressure;
+}
+
+void drawGraphTank20()
+{
+  for (int i = 0; i < logCount; i++)
+  {
+    graphBuffer[i] = temperatureLogs[i].tank20Temp;
+  }
+  drawGraphLine("T20:", graphBuffer, logCount);
+}
+
+void drawGraphTank10()
+{
+  for (int i = 0; i < logCount; i++)
+  {
+    graphBuffer[i] = temperatureLogs[i].tank10Temp;
+  }
+  drawGraphLine("T10:", graphBuffer, logCount);
 }

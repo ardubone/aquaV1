@@ -10,31 +10,28 @@
 enum Screen
 {
   MAIN_MENU,
-  REALTIME,
   LOGS_MENU,
   LOGS_TEXT_MENU,
   LOGS_GRAPH_MENU,
-  LOGS_INNER_TEXT,
-  LOGS_OUTER_TEXT,
+  LOGS_TANK20_TEXT,
+  LOGS_TANK10_TEXT,
   LOGS_ROOM_TEXT,
   LOGS_ROOM_PRESSURE,
-  LOGS_GRAPH_INNER,
-  LOGS_GRAPH_OUTER,
+  LOGS_GRAPH_TANK20,
+  LOGS_GRAPH_TANK10,
   LOGS_GRAPH_ROOM,
   LOGS_GRAPH_HUMID,
   LOGS_GRAPH_PRESSURE,
-  RELAY_CONTROL_MENU,
+  REALTIME,
   SET_TIME_MENU,
+  RELAY_CONTROL_MENU,
   WIFI_STATUS_MENU
-
 };
 
 void initDisplay(LiquidCrystal_I2C *lcdRef, DallasTemperature *sensorRef);
 void showScreen(Screen screen);
 void updateScreen(Screen screen);
 void setRoomData(float temp, float humidity, float pressure);
-void drawInnerLogs();
-void drawOuterLogs();
 void drawRoomLogs();
 void drawFooter(const __FlashStringHelper *text);
 void resetMenuCache();
@@ -47,7 +44,10 @@ void drawGenericLogs(
   const char* valuePrefix,
   std::function<void(LogEntry&, String&)> valueExtractor
 );
-
+void drawTank20Logs();
+void drawTank10Logs();
+void drawGraphTank20();
+void drawGraphTank10();
 
 float getRoomTemp();
 float getRoomHumidity();

@@ -51,8 +51,8 @@ String htmlHeader(const String &title)
     html += "<nav>\n"
             "<a href=\"/\">Main</a>\n"
             "<a href=\"/logs\">Logs</a>\n"
-            "<a href=\"/graph/inner\">Inner</a>\n"
-            "<a href=\"/graph/outer\">Outer</a>\n"
+            "<a href=\"/graph/tank20\">Tank20</a>\n"
+            "<a href=\"/graph/tank10\">Tank10</a>\n"
             "<a href=\"/graph/room\">Room</a>\n"
             "<a href=\"/graph/humid\">Humidity</a>\n"
             "<a href=\"/graph/press\">Pressure</a>\n"
@@ -103,11 +103,11 @@ void handleMainPage()
 void handleLogsPage()
 {
     String html = htmlHeader("Logs");
-    html += "<h1>Logs</h1><table border='1'><tr><th>Time</th><th>Inner</th><th>Outer</th><th>Room</th><th>Humid</th><th>Press</th></tr>";
+    html += "<h1>Logs</h1><table border='1'><tr><th>Time</th><th>Tank20</th><th>Tank10</th><th>Room</th><th>Humid</th><th>Press</th></tr>";
     for (int i = max(0, logCount - 60); i < logCount; i++)
     {
         const LogEntry &l = temperatureLogs[i];
-        html += "<tr><td>" + l.timestamp.timestamp() + "</td><td>" + String(l.innerTemp, 1) + "</td><td>" + String(l.outerTemp, 1) + "</td><td>" + String(l.roomTemp, 1) + "</td><td>" + String(l.roomHumidity, 0) + "</td><td>" + String(l.roomPressure, 1) + "</td></tr>";
+        html += "<tr><td>" + l.timestamp.timestamp() + "</td><td>" + String(l.tank20Temp, 1) + "</td><td>" + String(l.tank10Temp, 1) + "</td><td>" + String(l.roomTemp, 1) + "</td><td>" + String(l.roomHumidity, 0) + "</td><td>" + String(l.roomPressure, 1) + "</td></tr>";
     }
     html += "</table>" + htmlFooter();
     server.send(200, "text/html", html);
@@ -151,10 +151,10 @@ void handleGraphData()
     for (int i = max(0, logCount - 60); i < logCount; i++)
     {
         float v = 0;
-        if (type == "inner")
-            v = temperatureLogs[i].innerTemp;
-        else if (type == "outer")
-            v = temperatureLogs[i].outerTemp;
+        if (type == "tank20")
+            v = temperatureLogs[i].tank20Temp;
+        else if (type == "tank10")
+            v = temperatureLogs[i].tank10Temp;
         else if (type == "room")
             v = temperatureLogs[i].roomTemp;
         else if (type == "humid")
@@ -193,10 +193,10 @@ void setupWebServer()
 {
     server.on("/", handleMainPage);
     server.on("/logs", handleLogsPage);
-    server.on("/graph/inner", []()
-              { handleGraphPage("inner", "Inner Temp", "red"); });
-    server.on("/graph/outer", []()
-              { handleGraphPage("outer", "Outer Temp", "blue"); });
+    server.on("/graph/tank20", []()
+              { handleGraphPage("tank20", "Tank20 Temp", "red"); });
+    server.on("/graph/tank10", []()
+              { handleGraphPage("tank10", "Tank10 Temp", "blue"); });
     server.on("/graph/room", []()
               { handleGraphPage("room", "Room Temp", "lime"); });
     server.on("/graph/humid", []()

@@ -3,8 +3,8 @@
 
 #include <DallasTemperature.h>
 
-extern DeviceAddress innerSensorAddr;
-extern DeviceAddress outerSensorAddr;
+extern DeviceAddress tank20SensorAddr;
+extern DeviceAddress tank10SensorAddr;
 
 #define ENCODER_CLK 25 
 #define ENCODER_DT  32

@@ -61,12 +61,12 @@ void handleEncoder(Screen &currentScreen)
       showScreen(currentScreen);
       break;
 
-    case LOGS_INNER_TEXT:
-    case LOGS_OUTER_TEXT:
+    case LOGS_TANK20_TEXT:
+    case LOGS_TANK10_TEXT:
     case LOGS_ROOM_TEXT:
     case LOGS_ROOM_PRESSURE:
-    case LOGS_GRAPH_INNER:
-    case LOGS_GRAPH_OUTER:
+    case LOGS_GRAPH_TANK20:
+    case LOGS_GRAPH_TANK10:
     case LOGS_GRAPH_ROOM:
     case LOGS_GRAPH_HUMID:
     case LOGS_GRAPH_PRESSURE:
@@ -173,11 +173,11 @@ void handleButton(Screen &currentScreen)
           switch (logsMenuPos)
           {
           case 0:
-            currentScreen = LOGS_INNER_TEXT;
+            currentScreen = LOGS_TANK20_TEXT;
             logScrollPos = max(0, logCount - 20);
             break;
           case 1:
-            currentScreen = LOGS_OUTER_TEXT;
+            currentScreen = LOGS_TANK10_TEXT;
             logScrollPos = max(0, logCount - 20);
             break;
           case 2:
@@ -200,11 +200,11 @@ void handleButton(Screen &currentScreen)
           switch (logsMenuPos)
           {
           case 0:
-            currentScreen = LOGS_GRAPH_INNER;
+            currentScreen = LOGS_GRAPH_TANK20;
             logScrollPos = max(0, logCount - 20);
             break;
           case 1:
-            currentScreen = LOGS_GRAPH_OUTER;
+            currentScreen = LOGS_GRAPH_TANK10;
             logScrollPos = max(0, logCount - 20);
             break;
           case 2:
@@ -233,16 +233,16 @@ void handleButton(Screen &currentScreen)
           showScreen(currentScreen);
           break;
 
-        case LOGS_INNER_TEXT:
-        case LOGS_OUTER_TEXT:
+        case LOGS_TANK20_TEXT:
+        case LOGS_TANK10_TEXT:
         case LOGS_ROOM_TEXT:
         case LOGS_ROOM_PRESSURE:
           currentScreen = LOGS_TEXT_MENU;
           logsMenuPos = 0;
           showScreen(currentScreen);
           break;
-        case LOGS_GRAPH_INNER:
-        case LOGS_GRAPH_OUTER:
+        case LOGS_GRAPH_TANK20:
+        case LOGS_GRAPH_TANK10:
         case LOGS_GRAPH_ROOM:
         case LOGS_GRAPH_HUMID:
         case LOGS_GRAPH_PRESSURE:
