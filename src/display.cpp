@@ -460,7 +460,7 @@ void updateScreen(Screen screen)
       lastTempRequest = now;
     }
 
-    // раз в 1 секунду — обновить экран
+    // раз в 2 секунды — обновить экран
     if (now - lastUpdate > 2000)
     {
       drawRealtime();
