@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+Ты работаешь на m5 stack atom lite, его характеристики есть в документации и представлены ниже: 
+ESP32	240MHz dual core, 600 DMIPS, 520KB SRAM, Wi-Fi
+Flash	4MB
+Host Interface	TypeC x 1, GROVE(I2C+I/O+UART) x 1
+PIN Interface	G19, G21, G22, G23, G25, G33
+RGB LED	SK6812 3535 x 1
+IR	IR transmitter
+Button	Customizable button x 1
+
+Всегда при написании функций учитывай наличие ограничений памяти и пинов.
+
