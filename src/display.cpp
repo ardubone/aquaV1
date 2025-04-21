@@ -568,12 +568,20 @@ float getRoomPressure()
 
 float getTank20Temp()
 {
+  #ifdef DEBUG_MODE
+  return 25.0; // Моковое значение для отладки
+  #else
   return sensors->getTempCByIndex(0);
+  #endif
 }
 
 float getTank10Temp()
 {
+  #ifdef DEBUG_MODE
+  return 24.0; // Моковое значение для отладки
+  #else
   return sensors->getTempCByIndex(1);
+  #endif
 }
 
 void drawGraphTank20()

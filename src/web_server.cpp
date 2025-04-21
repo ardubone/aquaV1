@@ -151,8 +151,13 @@ void handleMainPage()
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-thermometer-half\"></i> Аквариумы</div>\n";
     html += "<div class=\"card-body\">\n";
+    #ifdef DEBUG_MODE
+    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> Аквариум20: <span class=\"value\">25.0</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> Аквариум10: <span class=\"value\">24.0</span><span class=\"unit\">°C</span></p>\n";
+    #else
     html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> Аквариум20: <span class=\"value\">" + String(getTank20Temp(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
     html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> Аквариум10: <span class=\"value\">" + String(getTank10Temp(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    #endif
     html += "</div></div></div>\n";
 
     // Данные комнаты
@@ -518,6 +523,14 @@ void setupWebServer()
     server.on("/setrelaytime", HTTP_GET, handleSetRelayTimePage);
     server.on("/setrelaytime", HTTP_POST, handleSetRelayTime);
     server.on("/wifi", handleWiFiStatusPage);
+    
+    // Обработчик для несуществующих URL
+    server.onNotFound([]() {
+        String html = htmlHeader("404 - Страница не найдена");
+        html += "<div class=\"alert alert-danger\">Страница не найдена</div>";
+        html += htmlFooter();
+        server.send(404, "text/html", html);
+    });
 
     server.begin();
 }

@@ -35,66 +35,76 @@ Screen currentScreen = MAIN_MENU;
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("Starting setup...");
   delay(200);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  Wire.begin(I2C_SDA, I2C_SCL);
-  lcd.init();
-  lcd.print(F("Loading...."));
-  delay(50);
-
-  if (!rtc.begin())
-  {
-    for (int i = 0; i < 5; i++)
-    {
-      Serial.println(F("RTC not found, retrying..."));
-      delay(500);
-      if (rtc.begin())
-        break;
-    }
-    if (!rtc.begin())
-    {
-      lcd.setCursor(0, 0);
-      lcd.print(F("RTC error!"));
-      while (true)
-        ;
-    }
-  }
-
-  if (!rtc.isrunning())
-  {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  }
-  delay(500);
-  lcd.backlight();
-  delay(500);
-  if (!bme.begin(0x76))
-  { 
-    lcd.clear();
-    lcd.print(F("BME280 not found!"));
-    while (true)
-      ;
-  }
-  delay(500);
-  sensors.begin();
-  if (sensors.getDeviceCount() == 0)
-  {
-    lcd.clear();
-    lcd.print(F("No sensors found!"));
-    while (true)
-      ;
-  }
-
+  
+  Serial.println("Initializing pins...");
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW); // Начально выключено
-  delay(500);
+  digitalWrite(RELAY_PIN, LOW);
+  
+  Serial.println("Initializing I2C...");
+  Wire.begin(I2C_SDA, I2C_SCL);
+  delay(50);
+
+  Serial.println("Initializing RTC...");
+  if (!rtc.begin())
+  {
+    Serial.println("RTC not found!");
+    while (true) {
+      Serial.println("RTC error, retrying...");
+      delay(1000);
+    }
+  }
+  
+  if (!rtc.isrunning())
+  {
+    Serial.println("RTC not running, adjusting time...");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+  else
+  {
+    Serial.println("RTC is running, adjusting time to computer time...");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
+  Serial.println("Initializing BME280...");
+  if (!bme.begin(0x76))
+  { 
+    Serial.println("BME280 not found!");
+    while (true) {
+      Serial.println("BME280 error, retrying...");
+      delay(1000);
+    }
+  }
+
+  Serial.println("Initializing temperature sensors...");
+  sensors.begin();
+  
+  #ifdef DEBUG_MODE
+  Serial.println("DEBUG MODE: Using mock sensor data");
+  #else
+  if (sensors.getDeviceCount() == 0)
+  {
+    Serial.println("No temperature sensors found!");
+    while (true) {
+      Serial.println("No sensors, retrying...");
+      delay(1000);
+    }
+  }
+  #endif
+  
+  Serial.println("Initializing WiFi...");
   initWiFi();
+  
+  Serial.println("Initializing encoder...");
   encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
   encoder.setCount(0);
+  
+  Serial.println("Initializing web server...");
   setupWebServer();
-
-  initDisplay(&lcd, &sensors);
-  showScreen(currentScreen);
+  
+  Serial.println("Setup completed successfully");
 }
 
 void loop()
@@ -106,38 +116,65 @@ void loop()
   {
     handleEncoder(currentScreen);
     handleButton(currentScreen);
-    updateScreen(currentScreen);
     lastUpdateFast = millis();
   }
 
-if (currentScreen != SET_TIME_MENU && !relayManualOverride) {
-  DateTime now = rtc.now();
-  int hour = now.hour();
+  if (currentScreen != SET_TIME_MENU && !relayManualOverride) {
+    DateTime now = rtc.now();
+    int hour = now.hour();
+    bool shouldBeOn = (hour >= relayOnHour && hour < relayOffHour);
 
-  bool shouldBeOn = (hour >= relayOnHour && hour < relayOffHour);
-
-  if (relayState != shouldBeOn) {
-    relayState = shouldBeOn;
-    digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
-    lastRelayToggleTime = now;
+    if (relayState != shouldBeOn) {
+      relayState = shouldBeOn;
+      digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
+      lastRelayToggleTime = now;
+      Serial.printf("Relay state changed to: %s (Time: %02d:%02d)\n", 
+                   relayState ? "ON" : "OFF", 
+                   now.hour(), 
+                   now.minute());
+    }
   }
-}
 
-static int lastCheckedDay = -1;
-DateTime now = rtc.now();
+  static int lastCheckedDay = -1;
+  DateTime now = rtc.now();
 
-if (now.day() != lastCheckedDay) {
-  lastCheckedDay = now.day();
-  relayManualOverride = false;  // Сброс каждый день в полночь
-}
+  if (now.day() != lastCheckedDay) {
+    lastCheckedDay = now.day();
+    relayManualOverride = false;
+    Serial.println("Day changed, resetting relay override");
+  }
 
-handleWebRequests();
-
+  handleWebRequests();
 
   if (millis() - lastUpdateSlow > 2000)
   {
+    #ifdef DEBUG_MODE
+    // Инициализируем мок-данные для логов
+    if (logCount == 0) {
+        LogEntry mockLog = {
+            .tank20Temp = 25.0,
+            .tank10Temp = 24.0,
+            .roomTemp = bme.readTemperature(),
+            .roomHumidity = bme.readHumidity(),
+            .roomPressure = (bme.readPressure() / 100.0) * 0.75006,
+            .timestamp = rtc.now(),
+            .samplesCount = 1
+        };
+        temperatureLogs[0] = mockLog;
+        logCount = 1;
+    }
+    
+    float temp = bme.readTemperature();
+    float hum = bme.readHumidity();
+    float pres = (bme.readPressure() / 100.0) * 0.75006;
+    setRoomData(temp, hum, pres);
+    #else
     updateTemperatureLog();
-    setRoomData(bme.readTemperature(), bme.readHumidity(), (bme.readPressure() / 100.0) * 0.75006);
+    float temp = bme.readTemperature();
+    float hum = bme.readHumidity();
+    float pres = (bme.readPressure() / 100.0) * 0.75006;
+    setRoomData(temp, hum, pres);
+    #endif
 
     lastUpdateSlow = millis();
   }
