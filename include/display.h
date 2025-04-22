@@ -6,6 +6,7 @@
 
 #include "logger.h"
 #include "temperature.h"
+#include "sensors.h"
 
 enum Screen
 {
@@ -31,7 +32,6 @@ enum Screen
 void initDisplay(LiquidCrystal_I2C *lcdRef);
 void showScreen(Screen screen);
 void updateScreen(Screen screen);
-void setRoomData(float temp, float humidity, float pressure);
 void drawRoomLogs();
 void drawFooter(const __FlashStringHelper *text);
 void resetMenuCache();
@@ -48,9 +48,3 @@ void drawTank20Logs();
 void drawTank10Logs();
 void drawGraphTank20();
 void drawGraphTank10();
-
-float getRoomTemp();
-float getRoomHumidity();
-float getRoomPressure();
-float getTank20Temp();
-float getTank10Temp();

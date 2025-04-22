@@ -1,7 +1,7 @@
 // controls.h
 #pragma once
 #include <Arduino.h>
-#include "display.h"
+// #include "display.h"
 #include <RTClib.h>
 extern DateTime lastRelayToggleTime;
 extern bool relayManualOverride;
@@ -16,5 +16,5 @@ extern bool relayState;
 extern int8_t relayMenuPos;
 
 
-void handleEncoder(Screen& currentScreen);
-void handleButton(Screen& currentScreen);
+void handleEncoder(int& currentScreen);
+void handleButton(int& currentScreen);

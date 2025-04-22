@@ -5,25 +5,20 @@
 #include <Arduino.h>
 #include <RTClib.h>
 #include "display.h"
+#include "relay.h"
+#include "time_manager.h"
 
 extern ESP32Encoder encoder;
 extern byte logCount;
 extern Screen currentScreen;
 extern RTC_DS1307 rtc;
-DateTime lastRelayToggleTime = DateTime(2000, 1, 1, 0, 0, 0); // начальное значение
-
-bool relayManualOverride = false;
 
 int8_t mainMenuPos = 0;
 int8_t logsMenuPos = 0;
 int16_t logScrollPos = 0;
 int32_t lastEncoderPos = 0;
 
-bool relayState = false;
 int8_t relayMenuPos = 0;
-
-DateTime tempTime;
-int selectedTimeField = 0; // 0=day, 1=month, 2=year, 3=hour, 4=minute
 
 void handleEncoder(Screen &currentScreen)
 {
@@ -74,25 +69,8 @@ void handleEncoder(Screen &currentScreen)
       showScreen(currentScreen);
       break;
     case SET_TIME_MENU:
-      switch (selectedTimeField)
-      {
-      case 0:
-        tempTime = tempTime + TimeSpan(delta, 0, 0, 0);
-        break; // День
-      case 1:
-        tempTime = tempTime + TimeSpan(delta * 30, 0, 0, 0);
-        break; // Месяц (грубо)
-      case 2:
-        tempTime = DateTime(tempTime.year() + delta, tempTime.month(), tempTime.day(), tempTime.hour(), tempTime.minute());
-        break; // Год
-      case 3:
-        tempTime = tempTime + TimeSpan(0, delta, 0, 0);
-        break; // Часы
-      case 4:
-        tempTime = tempTime + TimeSpan(0, 0, 0, delta * 60);
-        break; // Минуты
-      }
-      drawSetTimeMenu(tempTime, selectedTimeField); // Не showScreen()
+      updateTimeField(delta);
+      drawSetTimeMenu(tempTime, selectedTimeField);
       break;
 
     default:
@@ -136,8 +114,7 @@ void handleButton(Screen &currentScreen)
           }
           else if (mainMenuPos == 2)
           {
-            tempTime = rtc.now();
-            selectedTimeField = 0;
+            setTempTimeToNow(rtc);
             currentScreen = SET_TIME_MENU;
           }
           else if (mainMenuPos == 3)
@@ -252,13 +229,12 @@ void handleButton(Screen &currentScreen)
           break;
 
         case SET_TIME_MENU:
-          selectedTimeField++;
-          if (selectedTimeField > 4)
+          nextTimeField();
+          if (isLastTimeField())
           {
-            rtc.adjust(tempTime);
+            saveCurrentTime(rtc);
             currentScreen = MAIN_MENU;
             mainMenuPos = 0;
-            selectedTimeField = 0;
             showScreen(currentScreen);
           }
           else
@@ -270,10 +246,7 @@ void handleButton(Screen &currentScreen)
         case RELAY_CONTROL_MENU:
           if (relayMenuPos == 0)
           {
-            relayState = !relayState;
-            digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
-            lastRelayToggleTime = rtc.now();
-            relayManualOverride = true;
+            toggleRelay(rtc.now());
           }
           else if (relayMenuPos == 1)
           {

@@ -2,16 +2,14 @@
 #include "display.h"
 #include "logger.h"
 #include "config.h"
+#include "relay.h"
+#include "sensors.h"
+#include "temperature.h"
 #include <RTClib.h>
 
 WebServer server(80);
 
-extern bool relayState;
-extern DateTime lastRelayToggleTime;
 extern RTC_DS1307 rtc;
-extern bool relayManualOverride;
-extern uint8_t relayOnHour;
-extern uint8_t relayOffHour;
 
 // Прототипы
 String htmlHeader(const String &title);
@@ -86,14 +84,14 @@ String htmlFooter()
 
 void handleAutoOn()
 {
-    relayManualOverride = false;
+    resetRelayOverride();
     server.sendHeader("Location", "/");
     server.send(303);
 }
 
 void handleAutoOff()
 {
-    relayManualOverride = true;
+    toggleRelay(rtc.now());
     server.sendHeader("Location", "/");
     server.send(303);
 }
@@ -151,8 +149,8 @@ void handleMainPage()
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-thermometer-half\"></i> Аквариумы</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> Аквариум20: <span class=\"value\">" + String(getTank20Temp(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
-    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> Аквариум10: <span class=\"value\">" + String(getTank10Temp(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> Аквариум20: <span class=\"value\">" + String(getTank20Temperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> Аквариум10: <span class=\"value\">" + String(getTank10Temperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
     html += "</div></div></div>\n";
 
     // Данные комнаты
@@ -170,12 +168,13 @@ void handleMainPage()
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(relayState ? "bg-success" : "bg-danger") + "\">" + String(relayState ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(relayManualOverride ? "bg-warning" : "bg-info") + "\">" + String(relayManualOverride ? "Ручной" : "Авто") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastRelayToggleTime.day()) + "." + String(lastRelayToggleTime.month()) + "." + String(lastRelayToggleTime.year()) + " " + String(lastRelayToggleTime.hour()) + ":" + String(lastRelayToggleTime.minute()) + "</span></p>\n";
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getRelayState() ? "bg-success" : "bg-danger") + "\">" + String(getRelayState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isRelayManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isRelayManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggle = getLastRelayToggleTime();
+    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggle.day()) + "." + String(lastToggle.month()) + "." + String(lastToggle.year()) + " " + String(lastToggle.hour()) + ":" + String(lastToggle.minute()) + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
-    html += relayState ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
-    html += relayManualOverride ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
+    html += getRelayState() ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isRelayManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
     html += "</div>\n"; // закрываем row
@@ -362,20 +361,16 @@ void handleGraphData()
 
 void handleRelayOn()
 {
-    relayState = true;
-    relayManualOverride = true;
-    digitalWrite(RELAY_PIN, HIGH);
-    lastRelayToggleTime = rtc.now();
+    toggleRelay(rtc.now());
     server.sendHeader("Location", "/");
     server.send(303);
 }
 
 void handleRelayOff()
 {
-    relayState = false;
-    relayManualOverride = true;
-    digitalWrite(RELAY_PIN, LOW);
-    lastRelayToggleTime = rtc.now();
+    if (getRelayState()) {
+        toggleRelay(rtc.now());
+    }
     server.sendHeader("Location", "/");
     server.send(303);
 }
@@ -473,12 +468,12 @@ void handleSetRelayTimePage() {
     
     html += "<div class=\"mb-3\">\n";
     html += "<label class=\"form-label\">Время включения</label>\n";
-    html += "<input type=\"number\" class=\"form-control\" name=\"onHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(relayOnHour) + "\">\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"onHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(getRelayOnHour()) + "\">\n";
     html += "</div>\n";
     
     html += "<div class=\"mb-3\">\n";
     html += "<label class=\"form-label\">Время выключения</label>\n";
-    html += "<input type=\"number\" class=\"form-control\" name=\"offHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(relayOffHour) + "\">\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"offHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(getRelayOffHour()) + "\">\n";
     html += "</div>\n";
     
     html += "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-save\"></i> Сохранить</button>\n";
@@ -490,8 +485,7 @@ void handleSetRelayTimePage() {
 
 void handleSetRelayTime() {
     if (server.hasArg("onHour") && server.hasArg("offHour")) {
-        relayOnHour = server.arg("onHour").toInt();
-        relayOffHour = server.arg("offHour").toInt();
+        setRelayTimes(server.arg("onHour").toInt(), server.arg("offHour").toInt());
     }
     
     server.sendHeader("Location", "/setrelaytime");
