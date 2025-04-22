@@ -4,11 +4,11 @@
 #include "display.h"
 #include "logger.h"
 #include "net.h"
+#include "temperature.h"
 
 #include <functional>
 
-static LiquidCrystal_I2C *lcd;
-static DallasTemperature *sensors;
+LiquidCrystal_I2C* lcd;
 
 static float roomTemp = 0.0;
 static float roomHumidity = 0.0;
@@ -49,10 +49,9 @@ void resetMenuCache()
   lastLogScroll = -1;
 }
 
-void initDisplay(LiquidCrystal_I2C *lcdPtr, DallasTemperature *sensorsPtr)
+void initDisplay(LiquidCrystal_I2C *lcdRef)
 {
-  lcd = lcdPtr;
-  sensors = sensorsPtr;
+  lcd = lcdRef;
   lcd->init();
   lcd->backlight();
 }
@@ -243,8 +242,8 @@ void drawRealtime()
   static int lastMinute = -1;
   static bool lastRelayState = false;
 
-  float tank20 = sensors->getTempCByIndex(0);
-  float tank10 = sensors->getTempCByIndex(1);
+  float tank20 = getTank20Temperature();
+  float tank10 = getTank10Temperature();
   DateTime now = rtc.now();
 
   if (tank20 != lastTank20 || tank10 != lastTank10 ||
@@ -456,7 +455,7 @@ void updateScreen(Screen screen)
     // раз в 1.5 секунды — запросить температуру
     if (now - lastTempRequest > 1500)
     {
-      sensors->requestTemperatures();
+      requestTemperatures();
       lastTempRequest = now;
     }
 
@@ -568,12 +567,12 @@ float getRoomPressure()
 
 float getTank20Temp()
 {
-  return sensors->getTempCByIndex(0);
+  return getTank20Temperature();
 }
 
 float getTank10Temp()
 {
-  return sensors->getTempCByIndex(1);
+  return getTank10Temperature();
 }
 
 void drawGraphTank20()

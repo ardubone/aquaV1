@@ -15,19 +15,23 @@
 #include "logger.h"
 #include "controls.h"
 #include "web_server.h"
+#include "temperature.h"
 
 
-DeviceAddress tank20SensorAddr = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
-DeviceAddress tank10SensorAddr = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
+// Переменные определены в temperature.cpp
+extern DeviceAddress tank20SensorAddr;
+extern DeviceAddress tank10SensorAddr;
 
 // Инициализация времени реле
 uint8_t relayOnHour = 8;
 uint8_t relayOffHour = 19;
 
 RTC_DS1307 rtc;
-LiquidCrystal_I2C lcd(0x27, 20, 4);
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
+// Используем переменную lcd из display.cpp
+extern LiquidCrystal_I2C lcd;
+// Используем переменные из temperature.cpp
+extern OneWire oneWire;
+extern DallasTemperature sensors;
 ESP32Encoder encoder;
 Adafruit_BME280 bme;
 Screen currentScreen = MAIN_MENU;
@@ -93,7 +97,7 @@ void setup()
   encoder.setCount(0);
   setupWebServer();
 
-  initDisplay(&lcd, &sensors);
+  initDisplay(&lcd);
   showScreen(currentScreen);
 }
 
@@ -133,9 +137,9 @@ if (now.day() != lastCheckedDay) {
 
 handleWebRequests();
 
-
   if (millis() - lastUpdateSlow > 2000)
   {
+    requestTemperatures();
     updateTemperatureLog();
     setRoomData(bme.readTemperature(), bme.readHumidity(), (bme.readPressure() / 100.0) * 0.75006);
 

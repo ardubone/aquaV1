@@ -1,11 +1,11 @@
 #pragma once
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
-#include <DallasTemperature.h>
 #include <RTClib.h>
 #include <functional>
 
 #include "logger.h"
+#include "temperature.h"
 
 enum Screen
 {
@@ -28,7 +28,7 @@ enum Screen
   WIFI_STATUS_MENU
 };
 
-void initDisplay(LiquidCrystal_I2C *lcdRef, DallasTemperature *sensorRef);
+void initDisplay(LiquidCrystal_I2C *lcdRef);
 void showScreen(Screen screen);
 void updateScreen(Screen screen);
 void setRoomData(float temp, float humidity, float pressure);

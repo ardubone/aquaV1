@@ -2,6 +2,7 @@
 #pragma once
 #include <Arduino.h>
 #include <RTClib.h>
+#include "temperature.h"
 
 #define MAX_LOGS 144  // 24 часа * 6 интервалов в час
 #define LOG_INTERVAL_MINUTES 10
