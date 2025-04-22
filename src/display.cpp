@@ -4,6 +4,7 @@
 #include "display.h"
 #include "logger.h"
 #include "net.h"
+#include "config.h"
 
 #include <functional>
 
@@ -571,7 +572,7 @@ float getTank20Temp()
   #ifdef DEBUG_MODE
   return 25.0; // Моковое значение для отладки
   #else
-  return sensors->getTempCByIndex(0);
+  return sensors->getTempC(tank20SensorAddr);
   #endif
 }
 
@@ -580,7 +581,7 @@ float getTank10Temp()
   #ifdef DEBUG_MODE
   return 24.0; // Моковое значение для отладки
   #else
-  return sensors->getTempCByIndex(1);
+  return sensors->getTempC(tank10SensorAddr);
   #endif
 }
 

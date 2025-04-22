@@ -2,8 +2,7 @@
 #pragma once
 
 #include <DallasTemperature.h>
-
-#define DEBUG_MODE  // Раскомментируйте для использования моковых данных
+// #define DEBUG_MODE  // Раскомментируйте для использования моковых данных
 
 extern DeviceAddress tank20SensorAddr;
 extern DeviceAddress tank10SensorAddr;
