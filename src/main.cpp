@@ -4,7 +4,7 @@
 // #include <LiquidCrystal_I2C.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <ESP32Encoder.h>
+// #include <ESP32Encoder.h>
 #include <WiFi.h>
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
@@ -13,7 +13,7 @@
 #include "config.h"
 // #include "display.h"
 #include "logger.h"
-#include "controls.h"
+// #include "controls.h"
 #include "web_server.h"
 #include "temperature.h"
 #include "relay.h"
@@ -39,7 +39,7 @@ void setup()
 {
   Serial.begin(115200);
   delay(200);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  // pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
   // lcd.init();
   // lcd.print(F("Loading...."));
@@ -90,12 +90,12 @@ void setup()
       ;
   }
 
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  // pinMode(BUTTON_PIN, INPUT_PULLUP);
   initRelay();
   delay(500);
   initWiFi();
-  encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
-  encoder.setCount(0);
+  // encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
+  // encoder.setCount(0);
   setupWebServer();
   initTimeManager();
 

@@ -5,7 +5,7 @@
 #include <Adafruit_BME280.h>
 #include <EEPROM.h>
 
-#include "display.h"
+// #include "display.h"
 #include "config.h"
 
 extern RTC_DS1307 rtc;
