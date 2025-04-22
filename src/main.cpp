@@ -1,19 +1,16 @@
 // main.cpp (Atom Lite / ESP32)
 #include <Arduino.h>
 #include <Wire.h>
-// #include <LiquidCrystal_I2C.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-// #include <ESP32Encoder.h>
+//#include <ESP32Encoder.h>
 #include <WiFi.h>
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
 #include "net.h"
 
 #include "config.h"
-// #include "display.h"
 #include "logger.h"
-// #include "controls.h"
 #include "web_server.h"
 #include "temperature.h"
 #include "relay.h"
@@ -26,23 +23,17 @@ extern DeviceAddress tank20SensorAddr;
 extern DeviceAddress tank10SensorAddr;
 
 RTC_DS1307 rtc;
-// Используем переменную lcd из display.cpp
-// extern LiquidCrystal_I2C lcd;
 // Используем переменные из temperature.cpp
 extern OneWire oneWire;
 extern DallasTemperature sensors;
-ESP32Encoder encoder;
+//ESP32Encoder encoder;
 Adafruit_BME280 bme;
-// Screen currentScreen = MAIN_MENU;
 
 void setup()
 {
   Serial.begin(115200);
   delay(200);
-  // pinMode(BUTTON_PIN, INPUT_PULLUP);
   Wire.begin(I2C_SDA, I2C_SCL);
-  // lcd.init();
-  // lcd.print(F("Loading...."));
   delay(50);
 
   if (!rtc.begin())
@@ -56,8 +47,6 @@ void setup()
     }
     if (!rtc.begin())
     {
-      // lcd.setCursor(0, 0);
-      // lcd.print(F("RTC error!"));
       Serial.println(F("RTC error!"));
       while (true)
         ;
@@ -69,12 +58,9 @@ void setup()
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
   delay(500);
-  // lcd.backlight();
   delay(500);
   if (!bme.begin(0x76))
   { 
-    // lcd.clear();
-    // lcd.print(F("BME280 not found!"));
     Serial.println(F("BME280 not found!"));
     while (true)
       ;
@@ -83,24 +69,18 @@ void setup()
   sensors.begin();
   if (sensors.getDeviceCount() == 0)
   {
-    // lcd.clear();
-    // lcd.print(F("No sensors found!"));
     Serial.println(F("No sensors found!"));
     while (true)
       ;
   }
 
-  // pinMode(BUTTON_PIN, INPUT_PULLUP);
   initRelay();
   delay(500);
   initWiFi();
-  // encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
-  // encoder.setCount(0);
+  //encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
+  //encoder.setCount(0);
   setupWebServer();
   initTimeManager();
-
-  //initDisplay(&lcd);
-  // showScreen(currentScreen);
 }
 
 void loop()
@@ -110,9 +90,6 @@ void loop()
 
   if (millis() - lastUpdateFast > 100)
   {
-    // handleEncoder(currentScreen);
-    // handleButton(currentScreen);
-    // updateScreen(currentScreen);
     lastUpdateFast = millis();
   }
 
