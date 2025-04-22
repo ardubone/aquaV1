@@ -4,6 +4,7 @@
 #include "relay.h"
 #include "sensors.h"
 #include "temperature.h"
+#include "autofeeder.h"
 #include <RTClib.h>
 
 WebServer server(80);
@@ -25,6 +26,9 @@ void handleSetTime();
 void handleWiFiStatusPage();
 void handleSetRelayTimePage();
 void handleSetRelayTime();
+void handleAutoFeederPage();
+void handleAutoFeederActivate();
+void handleAutoFeederStatus();
 
 // Структура для времени реле
 struct RelayTime {
@@ -113,6 +117,7 @@ String generateNavMenu(const String& activePage = "") {
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "settime" ? activeClass : emptyClass) + "\" href=\"/settime\"><i class=\"bi bi-clock\"></i> Время</a></li>\n";
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "setrelaytime" ? activeClass : emptyClass) + "\" href=\"/setrelaytime\"><i class=\"bi bi-power\"></i> Время реле</a></li>\n";
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "wifi" ? activeClass : emptyClass) + "\" href=\"/wifi\"><i class=\"bi bi-wifi\"></i> WiFi</a></li>\n";
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "autofeeder" ? activeClass : emptyClass) + "\" href=\"/autofeeder\"><i class=\"bi bi-egg\"></i> Кормушка</a></li>\n";
     
     html += "</ul></div></div></nav>\n";
     return html;
@@ -174,6 +179,22 @@ void handleMainPage()
     html += "<div class=\"d-grid gap-2\">\n";
     html += getRelayState() ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
     html += isRelayManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
+    html += "</div></div></div></div>\n";
+
+    // Автокормушка 
+    html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-egg\"></i> Автокормушка</div>\n";
+    html += "<div class=\"card-body\">\n";
+    
+    // Внешняя переменная из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(autoFeederMosfet.isOn() ? "bg-success" : "bg-danger") + "\">" + String(autoFeederMosfet.isOn() ? "Активна" : "Неактивна") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Следующее кормление: <span class=\"text-muted\">9:00, 19:00</span></p>\n";
+    html += "<div class=\"d-grid gap-2\">\n";
+    html += "<a class=\"btn btn-primary\" href=\"/autofeeder/activate\"><i class=\"bi bi-play-circle\"></i> Покормить сейчас</a>\n";
+    html += "<a class=\"btn btn-outline-primary\" href=\"/autofeeder\"><i class=\"bi bi-gear\"></i> Настройки</a>\n";
     html += "</div></div></div></div>\n";
 
     html += "</div>\n"; // закрываем row
@@ -491,6 +512,59 @@ void handleSetRelayTime() {
     server.send(303);
 }
 
+void handleAutoFeederPage() {
+    String html = htmlHeader("Автокормушка");
+    html += generateNavMenu("autofeeder");
+    
+    // Карточка управления
+    html += "<div class=\"row\">\n";
+    html += "<div class=\"col-md-6 mb-3\">\n";
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-egg\"></i> Управление кормушкой</div>\n";
+    html += "<div class=\"card-body\">\n";
+    
+    // Внешняя переменная из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(autoFeederMosfet.isOn() ? "bg-success" : "bg-danger") + "\">" + String(autoFeederMosfet.isOn() ? "Активна" : "Неактивна") + "</span></p>\n";
+    
+    html += "<div class=\"d-grid gap-2\">\n";
+    html += "<a class=\"btn btn-primary\" href=\"/autofeeder/activate\"><i class=\"bi bi-play-circle\"></i> Активировать подачу корма</a>\n";
+    html += "</div></div></div></div>\n";
+    
+    // Карточка расписания
+    html += "<div class=\"col-md-6 mb-3\">\n";
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-calendar-check\"></i> Расписание</div>\n";
+    html += "<div class=\"card-body\">\n";
+    html += "<ul class=\"list-group\">\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Понедельник <span>9:00, 19:00</span></li>\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Вторник <span>9:00, 19:00</span></li>\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Среда <span>9:00, 19:00</span></li>\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Четверг <span>9:00, 19:00</span></li>\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Пятница <span>9:00, 19:00</span></li>\n";
+    html += "<li class=\"list-group-item d-flex justify-content-between align-items-center\">Воскресенье <span>9:00, 19:00</span></li>\n";
+    html += "</ul>\n";
+    html += "</div></div></div>\n";
+    
+    html += "</div>\n"; // закрываем row
+    
+    html += htmlFooter();
+    server.send(200, "text/html", html);
+}
+
+void handleAutoFeederActivate() {
+    activateFeeder();
+    server.sendHeader("Location", "/autofeeder");
+    server.send(303);
+}
+
+void handleAutoFeederStatus() {
+    extern Mosfet autoFeederMosfet;
+    String json = "{\"active\": " + String(autoFeederMosfet.isOn() ? "true" : "false") + "}";
+    server.send(200, "application/json", json);
+}
+
 void setupWebServer()
 {
     server.on("/", handleMainPage);
@@ -511,6 +585,9 @@ void setupWebServer()
     server.on("/setrelaytime", HTTP_GET, handleSetRelayTimePage);
     server.on("/setrelaytime", HTTP_POST, handleSetRelayTime);
     server.on("/wifi", handleWiFiStatusPage);
+    server.on("/autofeeder", handleAutoFeederPage);
+    server.on("/autofeeder/activate", handleAutoFeederActivate);
+    server.on("/autofeeder/status", handleAutoFeederStatus);
 
     server.begin();
 }

@@ -16,6 +16,7 @@
 #include "relay.h"
 #include "sensors.h"
 #include "time_manager.h"
+#include "autofeeder.h"
 
 
 // Переменные определены в temperature.cpp
@@ -81,6 +82,10 @@ void setup()
   //encoder.setCount(0);
   setupWebServer();
   initTimeManager();
+  
+  // Инициализация автокормушки
+  initAutoFeeder();
+  setupAutoFeederSchedule();
 }
 
 void loop()
@@ -91,6 +96,9 @@ void loop()
   if (millis() - lastUpdateFast > 100)
   {
     lastUpdateFast = millis();
+    
+    // Обновление автокормушки в быстром цикле
+    updateAutoFeeder();
   }
 
   // Обновляем состояние реле
