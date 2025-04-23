@@ -8,7 +8,10 @@ private:
     bool _isOn;
 
 public:
-    Mosfet(uint8_t pin) : _pin(pin), _isOn(false) {}
+    Mosfet(uint8_t pin) : _pin(pin), _isOn(false) {
+        pinMode(_pin, OUTPUT);
+        digitalWrite(_pin, LOW);
+    }
 
     void init() {
         pinMode(_pin, OUTPUT);

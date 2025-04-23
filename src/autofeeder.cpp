@@ -12,6 +12,12 @@ AutoFeederScheduler autoFeederScheduler;
 unsigned long limitIgnoreStartTime = 0;
 bool isLimitIgnored = false;
 unsigned long lastScheduleCheck = 0;
+// Добавляем переменную для отслеживания времени последнего срабатывания концевика
+unsigned long lastLimitTriggeredTime = 0;
+// Флаг для блокировки запуска после срабатывания концевика
+bool isBlockedAfterLimitTrigger = false;
+// Константа для времени блокировки после срабатывания концевика (в мс)
+const unsigned long LIMIT_BLOCK_TIME = 2000;
 
 // Внешняя переменная RTC
 extern RTC_DS1307 rtc;
@@ -21,6 +27,10 @@ void initAutoFeeder() {
     autoFeederLimit.init();
     autoFeederMosfet.init();
     autoFeederScheduler.init(&rtc, &autoFeederMosfet);
+    
+    // Выводим начальное состояние концевика
+    Serial.print(F("[AUTOFEEDER] Начальное состояние концевика: "));
+    Serial.println(autoFeederLimit.isPressed() ? F("НАЖАТ") : F("НЕ НАЖАТ"));
     
     Serial.println(F("[AUTOFEEDER] Инициализация завершена"));
 }
@@ -56,9 +66,26 @@ void setupAutoFeederSchedule() {
 }
 
 bool activateFeeder() {
+    unsigned long currentTime = millis();
+    
+    // Проверяем, не заблокирована ли кормушка после срабатывания концевика
+    if (isBlockedAfterLimitTrigger && (currentTime - lastLimitTriggeredTime < LIMIT_BLOCK_TIME)) {
+        Serial.println(F("[AUTOFEEDER] Активация отменена - блокировка после срабатывания концевика"));
+        return false;
+    }
+    
     if (autoFeederMosfet.isOn()) {
         return false; // Кормушка уже активирована
     }
+    
+    // Проверяем, не нажат ли уже концевик
+    if (autoFeederLimit.isPressed()) {
+        Serial.println(F("[AUTOFEEDER] Активация отменена - концевик уже нажат"));
+        return false;
+    }
+    
+    // Сбрасываем блокировку после срабатывания концевика
+    isBlockedAfterLimitTrigger = false;
     
     Serial.println(F("[AUTOFEEDER] Активация кормушки"));
     autoFeederMosfet.turnOn();
@@ -86,9 +113,22 @@ void updateAutoFeeder() {
     }
 
     // Проверка концевика
-    if (!isLimitIgnored && autoFeederMosfet.isOn() && autoFeederLimit.isTriggered()) {
-        Serial.println(F("[AUTOFEEDER] Сработал концевик"));
-        autoFeederMosfet.turnOff();
+    if (!isLimitIgnored && autoFeederMosfet.isOn()) {
+        if (autoFeederLimit.isPressed()) {
+            Serial.println(F("[AUTOFEEDER] Концевик нажат"));
+            autoFeederMosfet.turnOff();
+            
+            // Устанавливаем флаг блокировки и время срабатывания
+            lastLimitTriggeredTime = currentTime;
+            isBlockedAfterLimitTrigger = true;
+            Serial.println(F("[AUTOFEEDER] Установлена блокировка повторной активации"));
+        }
+    }
+    
+    // Снимаем блокировку после истечения времени
+    if (isBlockedAfterLimitTrigger && (currentTime - lastLimitTriggeredTime > LIMIT_BLOCK_TIME)) {
+        isBlockedAfterLimitTrigger = false;
+        Serial.println(F("[AUTOFEEDER] Блокировка снята, можно запускать кормушку снова"));
     }
 
     // Проверка расписания

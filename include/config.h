@@ -6,10 +6,9 @@
 extern DeviceAddress tank20SensorAddr;
 extern DeviceAddress tank10SensorAddr;
 
-//#define ENCODER_CLK 25 
-//#define ENCODER_DT  32
-// #define BUTTON_PIN  23 
-#define RELAY_PIN  33  // выбери свободный пин
+// Переименовываем RELAY_PIN и добавляем новый пин для второго реле
+#define RELAY_PIN_TANK20  33  // Пин для реле аквариума 20
+#define RELAY_PIN_TANK10  23  // Пин для реле аквариума 10
 
 #define ONE_WIRE_BUS 19
 
@@ -18,7 +17,7 @@ extern DeviceAddress tank10SensorAddr;
 
 // Пины для автокормушки
 #define AUTOFEEDER_BUTTON_PIN     39  // Пин для кнопки автокормушки
-#define AUTOFEEDER_LIMIT_PIN      23  // Пин для концевого выключателя
+#define AUTOFEEDER_LIMIT_PIN      26  // Пин для концевого выключателя
 #define AUTOFEEDER_MOSFET_PIN     25  // Пин для управления MOSFET
 
 // Параметры автокормушки

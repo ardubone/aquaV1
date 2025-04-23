@@ -76,6 +76,7 @@ void setup()
   }
 
   initRelay();
+  initRelayTank10();
   delay(500);
   initWiFi();
   //encoder.attachHalfQuad(ENCODER_CLK, ENCODER_DT);
@@ -104,6 +105,7 @@ void loop()
   // Обновляем состояние реле
   DateTime now = rtc.now();
   updateRelay(now);
+  updateRelayTank10(now);
   
   handleWebRequests();
 

@@ -22,10 +22,21 @@ public:
 
     bool isTriggered() {
         bool currentState = digitalRead(_pin) == LOW;
+        
+        // Если состояние изменилось на LOW или если концевик уже нажат (LOW)
+        bool triggered = (currentState != _lastState && currentState) || currentState;
+        
+        // Обновляем _lastState только при изменении состояния
         if (currentState != _lastState) {
             _lastState = currentState;
-            return currentState;
         }
-        return false;
+        
+        return triggered;
+    }
+    
+    // Инвертированная логика для концевика, так как он подключен через внутренний подтягивающий резистор
+    bool isPressed() {
+        // LOW означает, что концевик нажат (замкнут)
+        return digitalRead(_pin) == LOW;
     }
 }; 

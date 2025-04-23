@@ -29,6 +29,10 @@ void handleSetRelayTime();
 void handleAutoFeederPage();
 void handleAutoFeederActivate();
 void handleAutoFeederStatus();
+void handleAutoFeederDebug();
+void handleAutoFeederFetOn();
+void handleAutoFeederFetOff();
+void handleAutoFeederDebugStatus();
 
 // Структура для времени реле
 struct RelayTime {
@@ -167,10 +171,10 @@ void handleMainPage()
     html += "<p class=\"mb-0\"><i class=\"bi bi-speedometer2\"></i> Давление: <span class=\"value\">" + String(getRoomPressure(), 1) + "</span><span class=\"unit\">мм рт.ст.</span></p>\n";
     html += "</div></div></div>\n";
 
-    // Управление реле
+    // Управление реле Tank20
     html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
     html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле</div>\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле Tank20</div>\n";
     html += "<div class=\"card-body\">\n";
     html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getRelayState() ? "bg-success" : "bg-danger") + "\">" + String(getRelayState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
     html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isRelayManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isRelayManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
@@ -179,6 +183,20 @@ void handleMainPage()
     html += "<div class=\"d-grid gap-2\">\n";
     html += getRelayState() ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
     html += isRelayManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
+    html += "</div></div></div></div>\n";
+
+    // Управление реле Tank10
+    html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле Tank10</div>\n";
+    html += "<div class=\"card-body\">\n";
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getRelayTank10State() ? "bg-success" : "bg-danger") + "\">" + String(getRelayTank10State() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isRelayTank10ManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isRelayTank10ManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggleTank10 = getRelayTank10LastToggleTime();
+    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleTank10.day()) + "." + String(lastToggleTank10.month()) + "." + String(lastToggleTank10.year()) + " " + String(lastToggleTank10.hour()) + ":" + String(lastToggleTank10.minute()) + "</span></p>\n";
+    html += "<div class=\"d-grid gap-2\">\n";
+    html += getRelayTank10State() ? "<a class=\"btn btn-off\" href=\"/relay_tank10/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay_tank10/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isRelayTank10ManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay_tank10/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay_tank10/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
     // Автокормушка 
@@ -194,7 +212,7 @@ void handleMainPage()
     html += "<p class=\"mb-2\">Следующее кормление: <span class=\"text-muted\">9:00, 19:00</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
     html += "<a class=\"btn btn-primary\" href=\"/autofeeder/activate\"><i class=\"bi bi-play-circle\"></i> Покормить сейчас</a>\n";
-    html += "<a class=\"btn btn-outline-primary\" href=\"/autofeeder\"><i class=\"bi bi-gear\"></i> Настройки</a>\n";
+    html += "<a class=\"btn btn-outline-primary\" href=\"/autofeeder\"><i class=\"bi bi-gear\"></i> Настройки кормушки</a>\n";
     html += "</div></div></div></div>\n";
 
     html += "</div>\n"; // закрываем row
@@ -478,14 +496,15 @@ void handleWiFiStatusPage()
 }
 
 void handleSetRelayTimePage() {
-    String html = htmlHeader("Установка времени реле");
+    String html = htmlHeader("Настройка времени реле");
     html += generateNavMenu("setrelaytime");
     
-    html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-clock\"></i> Установка времени реле</div>\n";
+    // Карточка для Tank20
+    html += "<div class=\"card mb-4\">\n";
+    html += "<div class=\"card-header\">Настройка времени работы реле Tank20</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<form action=\"/setrelaytime\" method=\"POST\">\n";
     
+    html += "<form action=\"/setrelaytime\" method=\"post\">\n";
     html += "<div class=\"mb-3\">\n";
     html += "<label class=\"form-label\">Время включения</label>\n";
     html += "<input type=\"number\" class=\"form-control\" name=\"onHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(getRelayOnHour()) + "\">\n";
@@ -499,6 +518,25 @@ void handleSetRelayTimePage() {
     html += "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-save\"></i> Сохранить</button>\n";
     html += "</form></div></div>\n";
 
+    // Карточка для Tank10
+    html += "<div class=\"card mb-4\">\n";
+    html += "<div class=\"card-header\">Настройка времени работы реле Tank10</div>\n";
+    html += "<div class=\"card-body\">\n";
+    
+    html += "<form action=\"/setrelaytime_tank10\" method=\"post\">\n";
+    html += "<div class=\"mb-3\">\n";
+    html += "<label class=\"form-label\">Время включения</label>\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"onHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(getRelayTank10OnHour()) + "\">\n";
+    html += "</div>\n";
+    
+    html += "<div class=\"mb-3\">\n";
+    html += "<label class=\"form-label\">Время выключения</label>\n";
+    html += "<input type=\"number\" class=\"form-control\" name=\"offHour\" placeholder=\"Час\" min=\"0\" max=\"23\" value=\"" + String(getRelayTank10OffHour()) + "\">\n";
+    html += "</div>\n";
+    
+    html += "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-save\"></i> Сохранить</button>\n";
+    html += "</form></div></div>\n";
+
     html += htmlFooter();
     server.send(200, "text/html", html);
 }
@@ -506,6 +544,15 @@ void handleSetRelayTimePage() {
 void handleSetRelayTime() {
     if (server.hasArg("onHour") && server.hasArg("offHour")) {
         setRelayTimes(server.arg("onHour").toInt(), server.arg("offHour").toInt());
+    }
+    
+    server.sendHeader("Location", "/setrelaytime");
+    server.send(303);
+}
+
+void handleSetRelayTank10Time() {
+    if (server.hasArg("onHour") && server.hasArg("offHour")) {
+        setRelayTank10Times(server.arg("onHour").toInt(), server.arg("offHour").toInt());
     }
     
     server.sendHeader("Location", "/setrelaytime");
@@ -530,6 +577,7 @@ void handleAutoFeederPage() {
     
     html += "<div class=\"d-grid gap-2\">\n";
     html += "<a class=\"btn btn-primary\" href=\"/autofeeder/activate\"><i class=\"bi bi-play-circle\"></i> Активировать подачу корма</a>\n";
+    html += "<a class=\"btn btn-warning\" href=\"/autofeeder/debug\"><i class=\"bi bi-tools\"></i> Режим отладки</a>\n";
     html += "</div></div></div></div>\n";
     
     // Карточка расписания
@@ -565,30 +613,234 @@ void handleAutoFeederStatus() {
     server.send(200, "application/json", json);
 }
 
+void handleAutoFeederDebug() {
+    String html = htmlHeader("Дебаг кормушки");
+    html += generateNavMenu("autofeeder");
+    
+    // Внешние переменные из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    extern LimitSwitch autoFeederLimit;
+    extern Button autoFeederButton;
+    extern bool isBlockedAfterLimitTrigger;
+    
+    // Основная карточка дебага
+    html += "<div class=\"card mb-4\">\n";
+    html += "<div class=\"card-header bg-warning text-dark\"><i class=\"bi bi-tools\"></i> Дебаг автокормушки</div>\n";
+    html += "<div class=\"card-body\">\n";
+    
+    // Статусы компонентов
+    html += "<div class=\"row mb-4\">\n";
+    
+    // FET статус
+    html += "<div class=\"col-md-4\">\n";
+    html += "<div class=\"card h-100\">\n";
+    html += "<div class=\"card-header\">Статус FET</div>\n";
+    html += "<div class=\"card-body text-center\">\n";
+    html += "<div id=\"fetStatus\" class=\"badge " + String(autoFeederMosfet.isOn() ? "bg-success" : "bg-danger") + " p-3 mb-3\" style=\"font-size: 1.2rem;\">" + 
+             String(autoFeederMosfet.isOn() ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН") + "</div>\n";
+    html += "<div class=\"d-grid gap-2\">\n";
+    html += "<button class=\"btn btn-success\" onclick=\"turnFetOn()\"><i class=\"bi bi-power\"></i> Включить</button>\n";
+    html += "<button class=\"btn btn-danger\" onclick=\"turnFetOff()\"><i class=\"bi bi-power\"></i> Выключить</button>\n";
+    html += "</div>\n";
+    html += "</div></div></div>\n";
+    
+    // Концевик статус
+    html += "<div class=\"col-md-4\">\n";
+    html += "<div class=\"card h-100\">\n";
+    html += "<div class=\"card-header\">Концевик</div>\n";
+    html += "<div class=\"card-body text-center\">\n";
+    html += "<div id=\"limitStatus\" class=\"badge " + String(autoFeederLimit.isPressed() ? "bg-success" : "bg-danger") + " p-3\" style=\"font-size: 1.2rem;\">" + 
+             String(autoFeederLimit.isPressed() ? "НАЖАТ" : "НЕ НАЖАТ") + "</div>\n";
+    html += "<div class=\"mt-3\"><small class=\"text-muted\">Обновляется автоматически</small></div>\n";
+    html += "</div></div></div>\n";
+    
+    // Кнопка статус
+    html += "<div class=\"col-md-4\">\n";
+    html += "<div class=\"card h-100\">\n";
+    html += "<div class=\"card-header\">Кнопка</div>\n";
+    html += "<div class=\"card-body text-center\">\n";
+    html += "<div id=\"buttonStatus\" class=\"badge bg-danger p-3\" style=\"font-size: 1.2rem;\">НЕ НАЖАТА</div>\n";
+    html += "<div class=\"mt-3\"><small class=\"text-muted\">Обновляется автоматически</small></div>\n";
+    html += "</div></div></div>\n";
+    
+    html += "</div>\n"; // row
+    
+    // Статус блокировки повторного запуска
+    html += "<div class=\"row mb-4\">\n";
+    html += "<div class=\"col\">\n";
+    html += "<div class=\"card\">\n";
+    html += "<div class=\"card-header\">Статус блокировки</div>\n";
+    html += "<div class=\"card-body text-center\">\n";
+    html += "<div id=\"blockStatus\" class=\"badge " + String(isBlockedAfterLimitTrigger ? "bg-danger" : "bg-success") + " p-3\" style=\"font-size: 1.2rem;\">" +
+            String(isBlockedAfterLimitTrigger ? "ЗАБЛОКИРОВАН" : "ГОТОВ К ЗАПУСКУ") + "</div>\n";
+    html += "<div class=\"mt-3\"><small class=\"text-muted\">Блокировка активна 2 секунды после срабатывания концевика</small></div>\n";
+    html += "</div></div></div>\n";
+    html += "</div>\n"; // row
+
+    // Вернуться на основную страницу
+    html += "<div class=\"d-grid gap-2 col-md-6 mx-auto\">\n";
+    html += "<a href=\"/autofeeder\" class=\"btn btn-primary\"><i class=\"bi bi-arrow-left\"></i> Вернуться к кормушке</a>\n";
+    html += "</div>\n";
+    
+    html += "</div>\n"; // card-body
+    html += "</div>\n"; // card
+    
+    // JavaScript для обновления статусов
+    html += "<script>\n";
+    html += "function updateStatus() {\n";
+    html += "  fetch('/autofeeder/debug/status')\n";
+    html += "    .then(response => response.json())\n";
+    html += "    .then(data => {\n";
+    html += "      // Обновляем статус FET\n";
+    html += "      document.getElementById('fetStatus').className = 'badge p-3 mb-3 ' + (data.fet ? 'bg-success' : 'bg-danger');\n";
+    html += "      document.getElementById('fetStatus').innerText = data.fet ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН';\n";
+    html += "      \n";
+    html += "      // Обновляем статус концевика\n";
+    html += "      document.getElementById('limitStatus').className = 'badge p-3 ' + (data.limit ? 'bg-success' : 'bg-danger');\n";
+    html += "      document.getElementById('limitStatus').innerText = data.limit ? 'НАЖАТ' : 'НЕ НАЖАТ';\n";
+    html += "      \n";
+    html += "      // Обновляем статус кнопки\n";
+    html += "      if (data.button) {\n";
+    html += "        document.getElementById('buttonStatus').className = 'badge p-3 bg-success';\n";
+    html += "        document.getElementById('buttonStatus').innerText = 'НАЖАТА';\n";
+    html += "        setTimeout(() => {\n";
+    html += "          document.getElementById('buttonStatus').className = 'badge p-3 bg-danger';\n";
+    html += "          document.getElementById('buttonStatus').innerText = 'НЕ НАЖАТА';\n";
+    html += "        }, 1000);\n";
+    html += "      }\n";
+    html += "      \n";
+    html += "      // Обновляем статус блокировки\n";
+    html += "      document.getElementById('blockStatus').className = 'badge p-3 ' + (data.blocked ? 'bg-danger' : 'bg-success');\n";
+    html += "      document.getElementById('blockStatus').innerText = data.blocked ? 'ЗАБЛОКИРОВАН' : 'ГОТОВ К ЗАПУСКУ';\n";
+    html += "    });\n";
+    html += "}\n";
+    html += "\n";
+    html += "function turnFetOn() {\n";
+    html += "  fetch('/autofeeder/fet/on')\n";
+    html += "    .then(response => updateStatus());\n";
+    html += "}\n";
+    html += "\n";
+    html += "function turnFetOff() {\n";
+    html += "  fetch('/autofeeder/fet/off')\n";
+    html += "    .then(response => updateStatus());\n";
+    html += "}\n";
+    html += "\n";
+    html += "// Обновляем статус каждую секунду\n";
+    html += "setInterval(updateStatus, 500);\n";
+    html += "// Инициализируем первичное обновление\n";
+    html += "updateStatus();\n";
+    html += "</script>\n";
+    
+    html += htmlFooter();
+    server.send(200, "text/html", html);
+}
+
+void handleAutoFeederFetOn() {
+    // Внешняя переменная из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    
+    autoFeederMosfet.turnOn();
+    server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handleAutoFeederFetOff() {
+    // Внешняя переменная из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    
+    autoFeederMosfet.turnOff();
+    server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handleAutoFeederDebugStatus() {
+    // Внешние переменные из autofeeder.cpp
+    extern Mosfet autoFeederMosfet;
+    extern LimitSwitch autoFeederLimit;
+    extern Button autoFeederButton;
+    extern bool isBlockedAfterLimitTrigger;
+    
+    String json = "{";
+    json += "\"fet\":" + String(autoFeederMosfet.isOn() ? "true" : "false") + ",";
+    json += "\"limit\":" + String(autoFeederLimit.isPressed() ? "true" : "false") + ",";
+    json += "\"button\":" + String(autoFeederButton.isPressed() ? "true" : "false") + ",";
+    json += "\"blocked\":" + String(isBlockedAfterLimitTrigger ? "true" : "false");
+    json += "}";
+    
+    server.send(200, "application/json", json);
+}
+
+// Добавляем обработчики для реле Tank10
+void handleRelayTank10On() {
+    toggleRelayTank10(rtc.now());
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
+void handleRelayTank10Off() {
+    toggleRelayTank10(rtc.now());
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
+void handleAutoTank10On() {
+    resetRelayTank10Override();
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
+void handleAutoTank10Off() {
+    toggleRelayTank10(rtc.now());
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
 void setupWebServer()
 {
     server.on("/", handleMainPage);
     server.on("/logs", handleLogsPage);
-    server.on("/graph", []() { handleGraphPage("tank20", "Аквариум20 Температура", "red"); });
-    server.on("/graph/tank20", []() { handleGraphPage("tank20", "Аквариум20 Температура", "red"); });
-    server.on("/graph/tank10", []() { handleGraphPage("tank10", "Аквариум10 Температура", "blue"); });
-    server.on("/graph/room", []() { handleGraphPage("room", "Комната Температура", "lime"); });
-    server.on("/graph/humid", []() { handleGraphPage("humid", "Влажность", "aqua"); });
-    server.on("/graph/press", []() { handleGraphPage("press", "Давление", "orange"); });
-    server.on("/data", handleGraphData);
+    server.on("/graph", []() {
+        handleGraphPage("temp", "Температура, °C", "#FF9900");
+    });
+    server.on("/graph/temp", []() {
+        handleGraphPage("temp", "Температура, °C", "#FF9900");
+    });
+    server.on("/graph/hum", []() {
+        handleGraphPage("hum", "Влажность, %", "#3399FF");
+    });
+    server.on("/graph/press", []() {
+        handleGraphPage("press", "Давление, мм рт.ст.", "#33CC33");
+    });
+    server.on("/graph/data", handleGraphData);
+    
+    // Обработчики управления реле Tank20
     server.on("/relay/on", handleRelayOn);
     server.on("/relay/off", handleRelayOff);
     server.on("/relay/auto/on", handleAutoOn);
     server.on("/relay/auto/off", handleAutoOff);
+    
+    // Обработчики управления реле Tank10
+    server.on("/relay_tank10/on", handleRelayTank10On);
+    server.on("/relay_tank10/off", handleRelayTank10Off);
+    server.on("/relay_tank10/auto/on", handleAutoTank10On);
+    server.on("/relay_tank10/auto/off", handleAutoTank10Off);
+    
     server.on("/settime", HTTP_GET, handleSetTimePage);
     server.on("/settime", HTTP_POST, handleSetTime);
+    server.on("/wifi", handleWiFiStatusPage);
+    
+    // Настройка времени реле
     server.on("/setrelaytime", HTTP_GET, handleSetRelayTimePage);
     server.on("/setrelaytime", HTTP_POST, handleSetRelayTime);
-    server.on("/wifi", handleWiFiStatusPage);
+    server.on("/setrelaytime_tank10", HTTP_POST, handleSetRelayTank10Time);
+    
+    // Управление автокормушкой
     server.on("/autofeeder", handleAutoFeederPage);
     server.on("/autofeeder/activate", handleAutoFeederActivate);
     server.on("/autofeeder/status", handleAutoFeederStatus);
-
+    server.on("/autofeeder/debug", handleAutoFeederDebug);
+    server.on("/autofeeder/fet/on", handleAutoFeederFetOn);
+    server.on("/autofeeder/fet/off", handleAutoFeederFetOff);
+    server.on("/autofeeder/debug/status", handleAutoFeederDebugStatus);
+    
     server.begin();
 }
 
