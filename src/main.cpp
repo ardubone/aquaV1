@@ -8,6 +8,7 @@
 #include <RTClib.h>
 #include <Adafruit_BME280.h>
 #include "net.h"
+#include "pcf8574_manager.h"
 
 #include "config.h"
 #include "logger.h"
@@ -29,6 +30,9 @@ extern OneWire oneWire;
 extern DallasTemperature sensors;
 //ESP32Encoder encoder;
 Adafruit_BME280 bme;
+
+// Глобальный объект PCF8574
+PCF8574Manager pcfManager;
 
 void setup()
 {
@@ -75,6 +79,13 @@ void setup()
       ;
   }
 
+  // Инициализация PCF8574
+  if (!pcfManager.begin()) {
+    Serial.println(F("PCF8574 initialization failed!"));
+    while (true)
+      ;
+  }
+
   initRelay();
   initRelayTank10();
   delay(500);
@@ -100,6 +111,9 @@ void loop()
     
     // Обновление автокормушки в быстром цикле
     updateAutoFeeder();
+    
+    // Обновление состояния PCF8574
+    pcfManager.update();
   }
 
   // Обновляем состояние реле

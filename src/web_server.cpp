@@ -5,11 +5,13 @@
 #include "sensors.h"
 #include "temperature.h"
 #include "autofeeder.h"
+#include "pcf8574_manager.h"
 #include <RTClib.h>
 
+// Глобальные объекты
 WebServer server(80);
-
 extern RTC_DS1307 rtc;
+extern PCF8574Manager pcfManager;
 
 // Прототипы
 String htmlHeader(const String &title);
@@ -840,6 +842,13 @@ void setupWebServer()
     server.on("/autofeeder/fet/on", handleAutoFeederFetOn);
     server.on("/autofeeder/fet/off", handleAutoFeederFetOff);
     server.on("/autofeeder/debug/status", handleAutoFeederDebugStatus);
+    
+    // Добавляем новый эндпоинт для проверки состояния пина
+    server.on("/api/pcf8574/status", HTTP_GET, []() {
+        bool pinState = pcfManager.getPin(2); // Проверяем состояние пина 2 (SENSOR_1)
+        String response = "{\"pin\": 2, \"state\": " + String(pinState ? "true" : "false") + "}";
+        server.send(200, "application/json", response);
+    });
     
     server.begin();
 }
