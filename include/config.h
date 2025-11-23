@@ -6,8 +6,8 @@
 // Дебаг режим - раскомментируйте для включения
  #define DEBUG_MODE
 
-extern DeviceAddress tank20SensorAddr;
-extern DeviceAddress tank10SensorAddr;
+extern DeviceAddress tankLrgSensorAddr;
+extern DeviceAddress tankSmlSensorAddr;
 
 // Флаги состояния компонентов
 extern bool isRtcInitialized;
@@ -17,9 +17,13 @@ extern bool isPcf8574Initialized;
 extern bool isAutoFeederInitialized;
 extern bool isCameraInitialized;
 
-// Переименовываем RELAY_PIN и добавляем новый пин для второго реле
-#define RELAY_PIN_TANK20  33  // Пин для реле аквариума 20
-#define RELAY_PIN_TANK10  23  // Пин для реле аквариума 10
+// Пины для управления светом аквариумов
+#define LIGHT_PIN_TANK_LRG  33  // Пин для света аквариума L (большой)
+#define LIGHT_PIN_TANK_SML  23  // Пин для света аквариума S (малый)
+
+// Константы для UI названий аквариумов
+#define TANK_LRG_NAME "Аквариум L"
+#define TANK_SML_NAME "Аквариум S"
 // GPIO 25 - резервный пин (ранее использовался для UV лампы)
 
 #define ONE_WIRE_BUS 19
@@ -62,12 +66,12 @@ struct PCF8574Config {
 };
 
 const PCF8574Config pcf8574Pins[] = {
-    {0, true, "UV_LAMP_TANK10"},      // UV лампа Tank10 (выход)
-    {1, true, "UV_LAMP_TANK20"},      // UV лампа Tank20 (выход)
-    {2, true, "FEEDER_RELAY_TANK10"}, // Реле кормушки Tank10 (выход)
-    {3, false, "FEEDER_LIMIT_TANK10"}, // Концевик кормушки Tank10 (вход)
-    {4, true, "FEEDER_RELAY_TANK20"},  // Реле кормушки Tank20 (выход)
-    {5, false, "FEEDER_LIMIT_TANK20"} // Концевик кормушки Tank20 (вход)
+    {0, true, "UV_LAMP_TANK_SML"},      // UV лампа аквариума S (выход)
+    {1, true, "UV_LAMP_TANK_LRG"},      // UV лампа аквариума L (выход)
+    {2, true, "FEEDER_RELAY_TANK_SML"}, // Реле кормушки аквариума S (выход)
+    {3, false, "FEEDER_LIMIT_TANK_SML"}, // Концевик кормушки аквариума S (вход)
+    {4, true, "FEEDER_RELAY_TANK_LRG"},  // Реле кормушки аквариума L (выход)
+    {5, false, "FEEDER_LIMIT_TANK_LRG"} // Концевик кормушки аквариума L (вход)
 };
 
 const uint8_t PCF8574_PIN_COUNT = sizeof(pcf8574Pins) / sizeof(PCF8574Config);

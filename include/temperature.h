@@ -8,17 +8,21 @@
 extern OneWire oneWire;
 extern DallasTemperature sensors;
 
-extern DeviceAddress tank20SensorAddr;
-extern DeviceAddress tank10SensorAddr;
+extern DeviceAddress tankLrgSensorAddr;
+extern DeviceAddress tankSmlSensorAddr;
 
 void initTemperatureSensors();
 void requestTemperatures();
-float getTank20Temperature();
-float getTank10Temperature();
+float getLrgTemperature();
+float getSmlTemperature();
 bool isSensorConnected(uint8_t index);
 
 // Функции для работы с адресами датчиков
 uint8_t getAllConnectedSensors(DeviceAddress* addresses, uint8_t maxCount);
 void saveSensorAddressesToEEPROM();
 void loadSensorAddressesFromEEPROM();
-bool setSensorAddress(uint8_t tankIndex, DeviceAddress address); // tankIndex: 0=Tank20, 1=Tank10 
+bool setSensorAddress(uint8_t tankIndex, DeviceAddress address); // tankIndex: 0=Аквариум L, 1=Аквариум S
+
+// Обратная совместимость
+float getTank20Temperature();
+float getTank10Temperature(); 

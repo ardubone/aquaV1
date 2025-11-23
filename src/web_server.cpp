@@ -55,8 +55,11 @@ void setupWebServer()
     });
     server.on("/data", handleGraphData);
     
-    // API для критических логов
+    // API для логов
     server.on("/api/critical", handleCriticalLogsApi);
+    server.on("/api/logs/hourly", handleHourlyLogsApi);
+    server.on("/api/logs/hourly/72", handleHourlyLogs72Api);
+    server.on("/api/logs/minutes", handleMinutesLogsApi);
     
     // Обработчики управления реле Tank20
     server.on("/relay/on", handleRelayOn);

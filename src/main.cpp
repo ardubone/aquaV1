@@ -18,7 +18,8 @@
 #include "sensors.h"
 #include "time_manager.h"
 #include "autofeeder.h"
-#include "camera.h"
+#include "atom_button.h"
+#include "atom_led.h"
 #include <EEPROM.h>
 
 #ifdef DEBUG_MODE
@@ -26,8 +27,8 @@
 #endif
 
 // Переменные определены в temperature.cpp
-extern DeviceAddress tank20SensorAddr;
-extern DeviceAddress tank10SensorAddr;
+extern DeviceAddress tankLrgSensorAddr;
+extern DeviceAddress tankSmlSensorAddr;
 
 RTC_DS1307 rtc;
 // Используем переменные из temperature.cpp
@@ -58,19 +59,6 @@ void setup()
   delay(200);
   Wire.begin(I2C_SDA, I2C_SCL);
   delay(50);
-
-  // Инициализация камеры
-  if (!initCamera()) {
-#ifdef DEBUG_MODE
-    Serial.println(F("Camera initialization failed - continuing in DEBUG_MODE"));
-    isCameraInitialized = false;
-#else
-    Serial.println(F("Camera initialization failed!"));
-    // Продолжаем работу без камеры
-    isCameraInitialized = false;
-#endif
-  }
-  delay(500);
 
   // Инициализация RTC
   if (!rtc.begin())
@@ -160,10 +148,25 @@ void setup()
     isPcf8574Initialized = true;
   }
 
-  initRelay();
-  initRelayTank10();
-  initUvLampTank10();
-  initUvLampTank20();
+  initLightTankLrg();
+  initLightTankSml();
+  initUvLampTankSml();
+  initUvLampTankLrg();
+  
+  // Устанавливаем начальное состояние света и УФ ламп на основе текущего времени
+#ifdef DEBUG_MODE
+  DateTime now = isRtcInitialized ? rtc.now() : getMockTime();
+#else
+  DateTime now = rtc.now();
+#endif
+  updateLightTankLrg(now);
+  updateLightTankSml(now);
+  updateUvLampTankSml(now);
+  updateUvLampTankLrg(now);
+  
+  // Инициализация кнопки и LED Atom
+  initAtomButton();
+  initAtomLed();
   // delay(500);
   // initWiFi();
   // Serial.println(F("WiFi connected." + String(WiFi.localIP())));
@@ -173,7 +176,7 @@ void setup()
   initTimeManager();
   
   // Инициализация EEPROM и логгера
-  if (!EEPROM.begin(512)) {
+  if (!EEPROM.begin(EEPROM_SIZE)) {
 #ifdef DEBUG_MODE
     Serial.println(F("EEPROM initialization failed - continuing in DEBUG_MODE"));
     initLogger(); // Инициализируем без загрузки из EEPROM
@@ -221,6 +224,41 @@ void loop()
   {
     lastUpdateFast = millis();
     
+    // Получаем текущее время для обработки событий
+#ifdef DEBUG_MODE
+    DateTime now = isRtcInitialized ? rtc.now() : getMockTime();
+#else
+    DateTime now = rtc.now();
+#endif
+    
+    // Обновление кнопки Atom
+    updateAtomButton();
+    
+    // Обработка одиночного клика - переключение обоих светов
+    if (getAtomButtonSingleClick()) {
+      toggleBothLights(now);
+    }
+    
+    // Обработка двойного клика - переход в авто режим
+    if (getAtomButtonDoubleClick()) {
+      setBothLightsAutoMode();
+    }
+    
+    // Обновление индикации LED
+    if (areBothLightsInAutoMode()) {
+      // Авто режим - голубой
+      setAtomLedColor(ATOM_LED_BLUE);
+    } else if (isLightTankLrgManualMode() != isLightTankSmlManualMode()) {
+      // Один из светов не в авто режиме - желтый
+      setAtomLedColor(ATOM_LED_YELLOW);
+    } else if (areBothLightsOn()) {
+      // Оба света вкл ручной - зеленый
+      setAtomLedColor(ATOM_LED_GREEN);
+    } else {
+      // Оба света выкл ручной - красный
+      setAtomLedColor(ATOM_LED_RED);
+    }
+    
     // Обновление состояния PCF8574
     if (isPcf8574Initialized) {
       pcfManager.update();
@@ -232,16 +270,16 @@ void loop()
     }
   }
 
-  // Обновляем состояние реле
+  // Обновляем состояние света
 #ifdef DEBUG_MODE
   DateTime now = isRtcInitialized ? rtc.now() : getMockTime();
 #else
   DateTime now = rtc.now();
 #endif
-  updateRelay(now);
-  updateRelayTank10(now);
-  updateUvLampTank10(now);
-  updateUvLampTank20(now);
+  updateLightTankLrg(now);
+  updateLightTankSml(now);
+  updateUvLampTankSml(now);
+  updateUvLampTankLrg(now);
   
   handleWebRequests();
 

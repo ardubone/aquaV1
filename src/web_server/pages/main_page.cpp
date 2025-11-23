@@ -52,8 +52,8 @@ void handleMainPage()
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-thermometer-half\"></i> Аквариумы</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> Аквариум20: <span class=\"value\">" + String(getTank20Temperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
-    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> Аквариум10: <span class=\"value\">" + String(getTank10Temperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> " + String(TANK_LRG_NAME) + ": <span class=\"value\">" + String(getLrgTemperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> " + String(TANK_SML_NAME) + ": <span class=\"value\">" + String(getSmlTemperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
     html += "</div></div></div>\n";
 
     // Данные комнаты
@@ -66,62 +66,60 @@ void handleMainPage()
     html += "<p class=\"mb-0\"><i class=\"bi bi-speedometer2\"></i> Давление: <span class=\"value\">" + String(getRoomPressure(), 1) + "</span><span class=\"unit\">мм рт.ст.</span></p>\n";
     html += "</div></div></div>\n";
 
-    // Управление реле Tank10
+    // Управление светом аквариума S
     html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
     html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле Tank10</div>\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление светом " + String(TANK_SML_NAME) + "</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getRelayTank10State() ? "bg-success" : "bg-danger") + "\">" + String(getRelayTank10State() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isRelayTank10ManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isRelayTank10ManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
-    DateTime lastToggleTank10 = getRelayTank10LastToggleTime();
-    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleTank10.day()) + "." + String(lastToggleTank10.month()) + "." + String(lastToggleTank10.year()) + " " + String(lastToggleTank10.hour()) + ":" + String(lastToggleTank10.minute()) + "</span></p>\n";
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getLightTankSmlState() ? "bg-success" : "bg-danger") + "\">" + String(getLightTankSmlState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isLightTankSmlManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isLightTankSmlManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggleTankSml = getLightTankSmlLastToggleTime();
+    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleTankSml.day()) + "." + String(lastToggleTankSml.month()) + "." + String(lastToggleTankSml.year()) + " " + String(lastToggleTankSml.hour()) + ":" + String(lastToggleTankSml.minute()) + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
-    html += getRelayTank10State() ? "<a class=\"btn btn-off\" href=\"/relay_tank10/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay_tank10/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
-    html += isRelayTank10ManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay_tank10/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay_tank10/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
+    html += getLightTankSmlState() ? "<a class=\"btn btn-off\" href=\"/relay_tank10/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay_tank10/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isLightTankSmlManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay_tank10/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay_tank10/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
-    // Управление UV лампой Tank10
+    // Управление UV лампой аквариума S
     html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
     html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-lightbulb\"></i> Управление UV лампой Tank10</div>\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-lightbulb\"></i> Управление UV лампой " + String(TANK_SML_NAME) + "</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getUvLampTank10State() ? "bg-success" : "bg-danger") + "\">" + String(getUvLampTank10State() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isUvLampTank10ManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isUvLampTank10ManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
-    DateTime lastToggleUvTank10 = getUvLampTank10LastToggleTime();
-    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleUvTank10.day()) + "." + String(lastToggleUvTank10.month()) + "." + String(lastToggleUvTank10.year()) + " " + String(lastToggleUvTank10.hour()) + ":" + String(lastToggleUvTank10.minute()) + "</span></p>\n";
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getUvLampTankSmlState() ? "bg-success" : "bg-danger") + "\">" + String(getUvLampTankSmlState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isUvLampTankSmlManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isUvLampTankSmlManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggleUvTankSml = getUvLampTankSmlLastToggleTime();
+    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleUvTankSml.day()) + "." + String(lastToggleUvTankSml.month()) + "." + String(lastToggleUvTankSml.year()) + " " + String(lastToggleUvTankSml.hour()) + ":" + String(lastToggleUvTankSml.minute()) + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
-    html += getUvLampTank10State() ? "<a class=\"btn btn-off\" href=\"/uv_lamp_tank10/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/uv_lamp_tank10/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
-    html += isUvLampTank10ManualMode() ? "<a class=\"btn btn-auto\" href=\"/uv_lamp_tank10/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/uv_lamp_tank10/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
-    html += "<a class=\"btn btn-outline-primary\" href=\"/setrelaytime\"><i class=\"bi bi-clock\"></i> Настроить время</a>\n";
+    html += getUvLampTankSmlState() ? "<a class=\"btn btn-off\" href=\"/uv_lamp_tank10/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/uv_lamp_tank10/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isUvLampTankSmlManualMode() ? "<a class=\"btn btn-auto\" href=\"/uv_lamp_tank10/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/uv_lamp_tank10/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
-    // Управление реле Tank20
+    // Управление светом аквариума L
     html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
     html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление реле Tank20</div>\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-power\"></i> Управление светом " + String(TANK_LRG_NAME) + "</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getRelayState() ? "bg-success" : "bg-danger") + "\">" + String(getRelayState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isRelayManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isRelayManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
-    DateTime lastToggle = getLastRelayToggleTime();
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getLightTankLrgState() ? "bg-success" : "bg-danger") + "\">" + String(getLightTankLrgState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isLightTankLrgManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isLightTankLrgManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggle = getLightTankLrgLastToggleTime();
     html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggle.day()) + "." + String(lastToggle.month()) + "." + String(lastToggle.year()) + " " + String(lastToggle.hour()) + ":" + String(lastToggle.minute()) + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
-    html += getRelayState() ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
-    html += isRelayManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
+    html += getLightTankLrgState() ? "<a class=\"btn btn-off\" href=\"/relay/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/relay/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isLightTankLrgManualMode() ? "<a class=\"btn btn-auto\" href=\"/relay/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/relay/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
-    // Управление UV лампой Tank20
+    // Управление UV лампой аквариума L
     html += "<div class=\"col-md-6 col-lg-4 mb-3\">\n";
     html += "<div class=\"card\">\n";
-    html += "<div class=\"card-header\"><i class=\"bi bi-lightbulb\"></i> Управление UV лампой Tank20</div>\n";
+    html += "<div class=\"card-header\"><i class=\"bi bi-lightbulb\"></i> Управление UV лампой " + String(TANK_LRG_NAME) + "</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getUvLampTank20State() ? "bg-success" : "bg-danger") + "\">" + String(getUvLampTank20State() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isUvLampTank20ManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isUvLampTank20ManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
-    DateTime lastToggleUvTank20 = getUvLampTank20LastToggleTime();
-    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleUvTank20.day()) + "." + String(lastToggleUvTank20.month()) + "." + String(lastToggleUvTank20.year()) + " " + String(lastToggleUvTank20.hour()) + ":" + String(lastToggleUvTank20.minute()) + "</span></p>\n";
+    html += "<p class=\"mb-2\">Состояние: <span class=\"badge " + String(getUvLampTankLrgState() ? "bg-success" : "bg-danger") + "\">" + String(getUvLampTankLrgState() ? "ВКЛ" : "ВЫКЛ") + "</span></p>\n";
+    html += "<p class=\"mb-2\">Режим: <span class=\"badge " + String(isUvLampTankLrgManualMode() ? "bg-warning" : "bg-info") + "\">" + String(isUvLampTankLrgManualMode() ? "Ручной" : "Авто") + "</span></p>\n";
+    DateTime lastToggleUvTankLrg = getUvLampTankLrgLastToggleTime();
+    html += "<p class=\"mb-2\">Последнее переключение: <span class=\"text-muted\">" + String(lastToggleUvTankLrg.day()) + "." + String(lastToggleUvTankLrg.month()) + "." + String(lastToggleUvTankLrg.year()) + " " + String(lastToggleUvTankLrg.hour()) + ":" + String(lastToggleUvTankLrg.minute()) + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
-    html += getUvLampTank20State() ? "<a class=\"btn btn-off\" href=\"/uv_lamp_tank20/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/uv_lamp_tank20/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
-    html += isUvLampTank20ManualMode() ? "<a class=\"btn btn-auto\" href=\"/uv_lamp_tank20/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/uv_lamp_tank20/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
-    html += "<a class=\"btn btn-outline-primary\" href=\"/setrelaytime\"><i class=\"bi bi-clock\"></i> Настроить время</a>\n";
+    html += getUvLampTankLrgState() ? "<a class=\"btn btn-off\" href=\"/uv_lamp_tank20/off\"><i class=\"bi bi-power\"></i> Выключить</a>" : "<a class=\"btn btn-on\" href=\"/uv_lamp_tank20/on\"><i class=\"bi bi-power\"></i> Включить</a>\n";
+    html += isUvLampTankLrgManualMode() ? "<a class=\"btn btn-auto\" href=\"/uv_lamp_tank20/auto/on\"><i class=\"bi bi-arrow-repeat\"></i> Перейти в АВТО</a>" : "<a class=\"btn btn-manual\" href=\"/uv_lamp_tank20/auto/off\"><i class=\"bi bi-hand-index\"></i> Перейти в РУЧНОЙ</a>\n";
     html += "</div></div></div></div>\n";
 
     // Автокормушки
@@ -137,8 +135,8 @@ void handleMainPage()
     bool tank10Active = feeder10 ? feeder10->isRelayOn() : false;
     bool tank20Active = feeder20 ? feeder20->isRelayOn() : false;
     
-    html += "<p class=\"mb-2\">Tank10: <span class=\"badge " + String(tank10Active ? "bg-success" : "bg-secondary") + "\">" + String(tank10Active ? "Активна" : "Неактивна") + "</span></p>\n";
-    html += "<p class=\"mb-2\">Tank20: <span class=\"badge " + String(tank20Active ? "bg-success" : "bg-secondary") + "\">" + String(tank20Active ? "Активна" : "Неактивна") + "</span></p>\n";
+    html += "<p class=\"mb-2\">" + String(TANK_SML_NAME) + ": <span class=\"badge " + String(tank10Active ? "bg-success" : "bg-secondary") + "\">" + String(tank10Active ? "Активна" : "Неактивна") + "</span></p>\n";
+    html += "<p class=\"mb-2\">" + String(TANK_LRG_NAME) + ": <span class=\"badge " + String(tank20Active ? "bg-success" : "bg-secondary") + "\">" + String(tank20Active ? "Активна" : "Неактивна") + "</span></p>\n";
     html += "<div class=\"d-grid gap-2\">\n";
     html += "<a class=\"btn btn-outline-primary\" href=\"/autofeeder\"><i class=\"bi bi-gear\"></i> Настройки кормушек</a>\n";
     html += "</div></div></div></div>\n";

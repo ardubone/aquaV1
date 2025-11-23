@@ -11,12 +11,12 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // Дефолтные адреса датчиков
-DeviceAddress defaultTank20SensorAddr = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
-DeviceAddress defaultTank10SensorAddr = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
+DeviceAddress defaultTankLrgSensorAddr = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
+DeviceAddress defaultTankSmlSensorAddr = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
 
 // Текущие адреса датчиков (загружаются из EEPROM или используют дефолтные)
-DeviceAddress tank20SensorAddr;
-DeviceAddress tank10SensorAddr;
+DeviceAddress tankLrgSensorAddr;
+DeviceAddress tankSmlSensorAddr;
 
 // Адрес в EEPROM для хранения адресов датчиков (после логов)
 #define EEPROM_SENSOR_ADDRESSES_START 496
@@ -41,22 +41,31 @@ void requestTemperatures() {
     // setWaitForConversion(true) уже установлен, поэтому ждем завершения конвертации автоматически
 }
 
-float getTank20Temperature() {
+float getLrgTemperature() {
 #ifdef DEBUG_MODE
     if (!isDs18b20Initialized) {
         return getMockTank20Temperature();
     }
 #endif
-    return sensors.getTempC(tank20SensorAddr);
+    return sensors.getTempC(tankLrgSensorAddr);
 }
 
-float getTank10Temperature() {
+float getSmlTemperature() {
 #ifdef DEBUG_MODE
     if (!isDs18b20Initialized) {
         return getMockTank10Temperature();
     }
 #endif
-    return sensors.getTempC(tank10SensorAddr);
+    return sensors.getTempC(tankSmlSensorAddr);
+}
+
+// Обратная совместимость
+float getTank20Temperature() {
+    return getLrgTemperature();
+}
+
+float getTank10Temperature() {
+    return getSmlTemperature();
 }
 
 bool isSensorConnected(uint8_t index) {
@@ -97,9 +106,9 @@ void saveSensorAddressesToEEPROM() {
     addr += sizeof(validFlag);
     
     // Сохраняем адреса
-    EEPROM.put(addr, tank20SensorAddr);
+    EEPROM.put(addr, tankLrgSensorAddr);
     addr += sizeof(DeviceAddress);
-    EEPROM.put(addr, tank10SensorAddr);
+    EEPROM.put(addr, tankSmlSensorAddr);
     
     if (!EEPROM.commit()) {
         Serial.println(F("[TEMP] Ошибка сохранения адресов датчиков в EEPROM"));
@@ -118,27 +127,27 @@ void loadSensorAddressesFromEEPROM() {
     
     if (validFlag != 0xAA) {
         // Данные невалидны, используем дефолтные адреса
-        memcpy(tank20SensorAddr, defaultTank20SensorAddr, sizeof(DeviceAddress));
-        memcpy(tank10SensorAddr, defaultTank10SensorAddr, sizeof(DeviceAddress));
+        memcpy(tankLrgSensorAddr, defaultTankLrgSensorAddr, sizeof(DeviceAddress));
+        memcpy(tankSmlSensorAddr, defaultTankSmlSensorAddr, sizeof(DeviceAddress));
         Serial.println(F("[TEMP] Используются дефолтные адреса датчиков"));
         return;
     }
     
     // Загружаем адреса
-    EEPROM.get(addr, tank20SensorAddr);
+    EEPROM.get(addr, tankLrgSensorAddr);
     addr += sizeof(DeviceAddress);
-    EEPROM.get(addr, tank10SensorAddr);
+    EEPROM.get(addr, tankSmlSensorAddr);
     
     Serial.println(F("[TEMP] Адреса датчиков загружены из EEPROM"));
 }
 
 bool setSensorAddress(uint8_t tankIndex, DeviceAddress address) {
     if (tankIndex == 0) {
-        // Tank20
-        memcpy(tank20SensorAddr, address, sizeof(DeviceAddress));
+        // Аквариум L (большой)
+        memcpy(tankLrgSensorAddr, address, sizeof(DeviceAddress));
     } else if (tankIndex == 1) {
-        // Tank10
-        memcpy(tank10SensorAddr, address, sizeof(DeviceAddress));
+        // Аквариум S (малый)
+        memcpy(tankSmlSensorAddr, address, sizeof(DeviceAddress));
     } else {
         return false;
     }

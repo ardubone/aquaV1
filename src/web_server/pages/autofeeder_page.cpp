@@ -3,6 +3,7 @@
 #include "../utils/html_templates.h"
 #include "../../../include/web_server.h"
 #include "../../../include/autofeeder.h"
+#include "../../../include/config.h"
 
 extern WebServer server;
 
@@ -50,8 +51,8 @@ void handleAutoFeederPage() {
     html += generateNavMenu("autofeeder");
     
     html += "<div class=\"row\">\n";
-    html += generateFeederSection("Tank10", "tank10");
-    html += generateFeederSection("Tank20", "tank20");
+    html += generateFeederSection(TANK_SML_NAME, "tank10");
+    html += generateFeederSection(TANK_LRG_NAME, "tank20");
     html += "</div>\n"; // row
     
     // Модальное окно для добавления расписания

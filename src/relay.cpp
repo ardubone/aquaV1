@@ -4,73 +4,73 @@
 
 extern PCF8574Manager pcfManager;
 
-// Переменные состояния реле Tank20
-static bool relayState = false;
-static bool relayManualOverride = false;
-static DateTime lastRelayToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
+// Переменные состояния света аквариума L (большой)
+static bool lightTankLrgState = false;
+static bool lightTankLrgManualOverride = false;
+static DateTime lastLightTankLrgToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
-// Настройки времени работы Tank20
-static uint8_t relayOnHour = 8;
-static uint8_t relayOffHour = 19;
+// Настройки времени работы аквариума L
+static uint8_t lightTankLrgOnHour = 8;
+static uint8_t lightTankLrgOffHour = 19;
 
-// Переменные состояния реле Tank10
-static bool relayTank10State = false;
-static bool relayTank10ManualOverride = false;
-static DateTime lastRelayTank10ToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
+// Переменные состояния света аквариума S (малый)
+static bool lightTankSmlState = false;
+static bool lightTankSmlManualOverride = false;
+static DateTime lastLightTankSmlToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
-// Настройки времени работы Tank10
-static uint8_t relayTank10OnHour = 8;
-static uint8_t relayTank10OffHour = 19;
+// Настройки времени работы аквариума S
+static uint8_t lightTankSmlOnHour = 8;
+static uint8_t lightTankSmlOffHour = 19;
 
-// Переменные состояния UV лампы Tank10
-static bool uvLampTank10State = false;
-static bool uvLampTank10ManualOverride = false;
-static DateTime lastUvLampTank10ToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
+// Переменные состояния UV лампы аквариума S
+static bool uvLampTankSmlState = false;
+static bool uvLampTankSmlManualOverride = false;
+static DateTime lastUvLampTankSmlToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
-// Настройки времени работы UV лампы Tank10
-static uint8_t uvLampTank10OnHour = 8;
-static uint8_t uvLampTank10OffHour = 10;
+// Настройки времени работы UV лампы аквариума S
+static uint8_t uvLampTankSmlOnHour = 8;
+static uint8_t uvLampTankSmlOffHour = 10;
 
-// Переменные состояния UV лампы Tank20
-static bool uvLampTank20State = false;
-static bool uvLampTank20ManualOverride = false;
-static DateTime lastUvLampTank20ToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
+// Переменные состояния UV лампы аквариума L
+static bool uvLampTankLrgState = false;
+static bool uvLampTankLrgManualOverride = false;
+static DateTime lastUvLampTankLrgToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
-// Настройки времени работы UV лампы Tank20
-static uint8_t uvLampTank20OnHour = 8;
-static uint8_t uvLampTank20OffHour = 10;
+// Настройки времени работы UV лампы аквариума L
+static uint8_t uvLampTankLrgOnHour = 8;
+static uint8_t uvLampTankLrgOffHour = 10;
 
-void initRelay() {
-  pinMode(RELAY_PIN_TANK20, OUTPUT);
-  digitalWrite(RELAY_PIN_TANK20, LOW);
+void initLightTankLrg() {
+  pinMode(LIGHT_PIN_TANK_LRG, OUTPUT);
+  digitalWrite(LIGHT_PIN_TANK_LRG, LOW);
 }
 
-void initRelayTank10() {
-  pinMode(RELAY_PIN_TANK10, OUTPUT);
-  digitalWrite(RELAY_PIN_TANK10, LOW);
+void initLightTankSml() {
+  pinMode(LIGHT_PIN_TANK_SML, OUTPUT);
+  digitalWrite(LIGHT_PIN_TANK_SML, LOW);
 }
 
-void initUvLampTank10() {
-  // UV лампа Tank10 управляется через PCF8574 пин 0
+void initUvLampTankSml() {
+  // UV лампа аквариума S управляется через PCF8574 пин 0
   // Инициализация происходит в PCF8574Manager::begin()
   pcfManager.setUvLampTank10(false);
 }
 
-void initUvLampTank20() {
-  // UV лампа Tank20 управляется через PCF8574 пин 1
+void initUvLampTankLrg() {
+  // UV лампа аквариума L управляется через PCF8574 пин 1
   // Инициализация происходит в PCF8574Manager::begin()
   pcfManager.setUvLampTank20(false);
 }
 
-void updateRelay(const DateTime &now) {
-  if (!relayManualOverride) {
+void updateLightTankLrg(const DateTime &now) {
+  if (!lightTankLrgManualOverride) {
     int hour = now.hour();
-    bool shouldBeOn = (hour >= relayOnHour && hour < relayOffHour);
+    bool shouldBeOn = (hour >= lightTankLrgOnHour && hour < lightTankLrgOffHour);
     
-    if (relayState != shouldBeOn) {
-      relayState = shouldBeOn;
-      digitalWrite(RELAY_PIN_TANK20, relayState ? HIGH : LOW);
-      lastRelayToggleTime = now;
+    if (lightTankLrgState != shouldBeOn) {
+      lightTankLrgState = shouldBeOn;
+      digitalWrite(LIGHT_PIN_TANK_LRG, lightTankLrgState ? HIGH : LOW);
+      lastLightTankLrgToggleTime = now;
     }
   }
   
@@ -78,210 +78,233 @@ void updateRelay(const DateTime &now) {
   static int lastCheckedDay = -1;
   if (now.day() != lastCheckedDay) {
     lastCheckedDay = now.day();
-    relayManualOverride = false;
+    lightTankLrgManualOverride = false;
   }
 }
 
-void updateRelayTank10(const DateTime &now) {
-  if (!relayTank10ManualOverride) {
+void updateLightTankSml(const DateTime &now) {
+  if (!lightTankSmlManualOverride) {
     int hour = now.hour();
-    bool shouldBeOn = (hour >= relayTank10OnHour && hour < relayTank10OffHour);
+    bool shouldBeOn = (hour >= lightTankSmlOnHour && hour < lightTankSmlOffHour);
     
-    if (relayTank10State != shouldBeOn) {
-      relayTank10State = shouldBeOn;
-      digitalWrite(RELAY_PIN_TANK10, relayTank10State ? HIGH : LOW);
-      lastRelayTank10ToggleTime = now;
+    if (lightTankSmlState != shouldBeOn) {
+      lightTankSmlState = shouldBeOn;
+      digitalWrite(LIGHT_PIN_TANK_SML, lightTankSmlState ? HIGH : LOW);
+      lastLightTankSmlToggleTime = now;
     }
   }
   
   // Сброс ручного режима каждый день в полночь
-  static int lastCheckedTank10Day = -1;
-  if (now.day() != lastCheckedTank10Day) {
-    lastCheckedTank10Day = now.day();
-    relayTank10ManualOverride = false;
+  static int lastCheckedSmlDay = -1;
+  if (now.day() != lastCheckedSmlDay) {
+    lastCheckedSmlDay = now.day();
+    lightTankSmlManualOverride = false;
   }
 }
 
-void updateUvLampTank10(const DateTime &now) {
-  if (!uvLampTank10ManualOverride) {
+void updateUvLampTankSml(const DateTime &now) {
+  if (!uvLampTankSmlManualOverride) {
     int hour = now.hour();
-    bool shouldBeOn = (hour >= uvLampTank10OnHour && hour < uvLampTank10OffHour);
+    bool shouldBeOn = (hour >= uvLampTankSmlOnHour && hour < uvLampTankSmlOffHour);
     
-    if (uvLampTank10State != shouldBeOn) {
-      uvLampTank10State = shouldBeOn;
-      pcfManager.setUvLampTank10(uvLampTank10State);
-      lastUvLampTank10ToggleTime = now;
+    if (uvLampTankSmlState != shouldBeOn) {
+      uvLampTankSmlState = shouldBeOn;
+      pcfManager.setUvLampTank10(uvLampTankSmlState);
+      lastUvLampTankSmlToggleTime = now;
     }
   }
   
   // Сброс ручного режима каждый день в полночь
-  static int lastCheckedTank10Day = -1;
-  if (now.day() != lastCheckedTank10Day) {
-    lastCheckedTank10Day = now.day();
-    uvLampTank10ManualOverride = false;
+  static int lastCheckedSmlDay = -1;
+  if (now.day() != lastCheckedSmlDay) {
+    lastCheckedSmlDay = now.day();
+    uvLampTankSmlManualOverride = false;
   }
 }
 
-void updateUvLampTank20(const DateTime &now) {
-  if (!uvLampTank20ManualOverride) {
+void updateUvLampTankLrg(const DateTime &now) {
+  if (!uvLampTankLrgManualOverride) {
     int hour = now.hour();
-    bool shouldBeOn = (hour >= uvLampTank20OnHour && hour < uvLampTank20OffHour);
+    bool shouldBeOn = (hour >= uvLampTankLrgOnHour && hour < uvLampTankLrgOffHour);
     
-    if (uvLampTank20State != shouldBeOn) {
-      uvLampTank20State = shouldBeOn;
-      pcfManager.setUvLampTank20(uvLampTank20State);
-      lastUvLampTank20ToggleTime = now;
+    if (uvLampTankLrgState != shouldBeOn) {
+      uvLampTankLrgState = shouldBeOn;
+      pcfManager.setUvLampTank20(uvLampTankLrgState);
+      lastUvLampTankLrgToggleTime = now;
     }
   }
   
   // Сброс ручного режима каждый день в полночь
-  static int lastCheckedTank20Day = -1;
-  if (now.day() != lastCheckedTank20Day) {
-    lastCheckedTank20Day = now.day();
-    uvLampTank20ManualOverride = false;
+  static int lastCheckedLrgDay = -1;
+  if (now.day() != lastCheckedLrgDay) {
+    lastCheckedLrgDay = now.day();
+    uvLampTankLrgManualOverride = false;
   }
 }
 
-void toggleRelay(const DateTime &now) {
-  relayState = !relayState;
-  digitalWrite(RELAY_PIN_TANK20, relayState ? HIGH : LOW);
-  lastRelayToggleTime = now;
-  relayManualOverride = true;
+void toggleLightTankLrg(const DateTime &now) {
+  lightTankLrgState = !lightTankLrgState;
+  digitalWrite(LIGHT_PIN_TANK_LRG, lightTankLrgState ? HIGH : LOW);
+  lastLightTankLrgToggleTime = now;
+  lightTankLrgManualOverride = true;
 }
 
-void toggleRelayTank10(const DateTime &now) {
-  relayTank10State = !relayTank10State;
-  digitalWrite(RELAY_PIN_TANK10, relayTank10State ? HIGH : LOW);
-  lastRelayTank10ToggleTime = now;
-  relayTank10ManualOverride = true;
+void toggleLightTankSml(const DateTime &now) {
+  lightTankSmlState = !lightTankSmlState;
+  digitalWrite(LIGHT_PIN_TANK_SML, lightTankSmlState ? HIGH : LOW);
+  lastLightTankSmlToggleTime = now;
+  lightTankSmlManualOverride = true;
 }
 
-void toggleUvLampTank10(const DateTime &now) {
-  uvLampTank10State = !uvLampTank10State;
-  pcfManager.setUvLampTank10(uvLampTank10State);
-  lastUvLampTank10ToggleTime = now;
-  uvLampTank10ManualOverride = true;
+void toggleUvLampTankSml(const DateTime &now) {
+  uvLampTankSmlState = !uvLampTankSmlState;
+  pcfManager.setUvLampTank10(uvLampTankSmlState);
+  lastUvLampTankSmlToggleTime = now;
+  uvLampTankSmlManualOverride = true;
 }
 
-void toggleUvLampTank20(const DateTime &now) {
-  uvLampTank20State = !uvLampTank20State;
-  pcfManager.setUvLampTank20(uvLampTank20State);
-  lastUvLampTank20ToggleTime = now;
-  uvLampTank20ManualOverride = true;
+void toggleUvLampTankLrg(const DateTime &now) {
+  uvLampTankLrgState = !uvLampTankLrgState;
+  pcfManager.setUvLampTank20(uvLampTankLrgState);
+  lastUvLampTankLrgToggleTime = now;
+  uvLampTankLrgManualOverride = true;
 }
 
-void resetRelayOverride() {
-  relayManualOverride = false;
+void resetLightTankLrgOverride() {
+  lightTankLrgManualOverride = false;
 }
 
-void resetRelayTank10Override() {
-  relayTank10ManualOverride = false;
+void resetLightTankSmlOverride() {
+  lightTankSmlManualOverride = false;
 }
 
-void resetUvLampTank10Override() {
-  uvLampTank10ManualOverride = false;
+void resetUvLampTankSmlOverride() {
+  uvLampTankSmlManualOverride = false;
 }
 
-void resetUvLampTank20Override() {
-  uvLampTank20ManualOverride = false;
+void resetUvLampTankLrgOverride() {
+  uvLampTankLrgManualOverride = false;
 }
 
-bool getRelayState() {
-  return relayState;
+bool getLightTankLrgState() {
+  return lightTankLrgState;
 }
 
-bool getRelayTank10State() {
-  return relayTank10State;
+bool getLightTankSmlState() {
+  return lightTankSmlState;
 }
 
-DateTime getLastRelayToggleTime() {
-  return lastRelayToggleTime;
+DateTime getLightTankLrgLastToggleTime() {
+  return lastLightTankLrgToggleTime;
 }
 
-DateTime getRelayTank10LastToggleTime() {
-  return lastRelayTank10ToggleTime;
+DateTime getLightTankSmlLastToggleTime() {
+  return lastLightTankSmlToggleTime;
 }
 
-bool isRelayManualMode() {
-  return relayManualOverride;
+bool isLightTankLrgManualMode() {
+  return lightTankLrgManualOverride;
 }
 
-bool isRelayTank10ManualMode() {
-  return relayTank10ManualOverride;
+bool isLightTankSmlManualMode() {
+  return lightTankSmlManualOverride;
 }
 
-bool getUvLampTank10State() {
-  return pcfManager.getUvLampTank10State();
+bool getUvLampTankSmlState() {
+  return uvLampTankSmlState;
 }
 
-DateTime getUvLampTank10LastToggleTime() {
-  return lastUvLampTank10ToggleTime;
+DateTime getUvLampTankSmlLastToggleTime() {
+  return lastUvLampTankSmlToggleTime;
 }
 
-bool isUvLampTank10ManualMode() {
-  return uvLampTank10ManualOverride;
+bool isUvLampTankSmlManualMode() {
+  return uvLampTankSmlManualOverride;
 }
 
-bool getUvLampTank20State() {
-  return pcfManager.getUvLampTank20State();
+bool getUvLampTankLrgState() {
+  return uvLampTankLrgState;
 }
 
-DateTime getUvLampTank20LastToggleTime() {
-  return lastUvLampTank20ToggleTime;
+DateTime getUvLampTankLrgLastToggleTime() {
+  return lastUvLampTankLrgToggleTime;
 }
 
-bool isUvLampTank20ManualMode() {
-  return uvLampTank20ManualOverride;
+bool isUvLampTankLrgManualMode() {
+  return uvLampTankLrgManualOverride;
 }
 
-void setRelayTimes(uint8_t onHour, uint8_t offHour) {
-  relayOnHour = onHour;
-  relayOffHour = offHour;
+void setLightTankLrgTimes(uint8_t onHour, uint8_t offHour) {
+  lightTankLrgOnHour = onHour;
+  lightTankLrgOffHour = offHour;
 }
 
-void setRelayTank10Times(uint8_t onHour, uint8_t offHour) {
-  relayTank10OnHour = onHour;
-  relayTank10OffHour = offHour;
+void setLightTankSmlTimes(uint8_t onHour, uint8_t offHour) {
+  lightTankSmlOnHour = onHour;
+  lightTankSmlOffHour = offHour;
 }
 
-void setUvLampTank10Times(uint8_t onHour, uint8_t offHour) {
-  uvLampTank10OnHour = onHour;
-  uvLampTank10OffHour = offHour;
+void setUvLampTankSmlTimes(uint8_t onHour, uint8_t offHour) {
+  uvLampTankSmlOnHour = onHour;
+  uvLampTankSmlOffHour = offHour;
 }
 
-uint8_t getUvLampTank10OnHour() {
-  return uvLampTank10OnHour;
+uint8_t getUvLampTankSmlOnHour() {
+  return uvLampTankSmlOnHour;
 }
 
-uint8_t getUvLampTank10OffHour() {
-  return uvLampTank10OffHour;
+uint8_t getUvLampTankSmlOffHour() {
+  return uvLampTankSmlOffHour;
 }
 
-void setUvLampTank20Times(uint8_t onHour, uint8_t offHour) {
-  uvLampTank20OnHour = onHour;
-  uvLampTank20OffHour = offHour;
+void setUvLampTankLrgTimes(uint8_t onHour, uint8_t offHour) {
+  uvLampTankLrgOnHour = onHour;
+  uvLampTankLrgOffHour = offHour;
 }
 
-uint8_t getUvLampTank20OnHour() {
-  return uvLampTank20OnHour;
+uint8_t getUvLampTankLrgOnHour() {
+  return uvLampTankLrgOnHour;
 }
 
-uint8_t getUvLampTank20OffHour() {
-  return uvLampTank20OffHour;
+uint8_t getUvLampTankLrgOffHour() {
+  return uvLampTankLrgOffHour;
 }
 
-uint8_t getRelayOnHour() {
-  return relayOnHour;
+uint8_t getLightTankLrgOnHour() {
+  return lightTankLrgOnHour;
 }
 
-uint8_t getRelayTank10OnHour() {
-  return relayTank10OnHour;
+uint8_t getLightTankSmlOnHour() {
+  return lightTankSmlOnHour;
 }
 
-uint8_t getRelayOffHour() {
-  return relayOffHour;
+uint8_t getLightTankLrgOffHour() {
+  return lightTankLrgOffHour;
 }
 
-uint8_t getRelayTank10OffHour() {
-  return relayTank10OffHour;
-} 
+uint8_t getLightTankSmlOffHour() {
+  return lightTankSmlOffHour;
+}
+
+// Функции синхронного управления обоими светами
+void toggleBothLights(const DateTime &now) {
+  // Переключаем оба света одновременно
+  toggleLightTankLrg(now);
+  toggleLightTankSml(now);
+}
+
+void setBothLightsAutoMode() {
+  // Сбрасываем ручной режим для обоих светов
+  resetLightTankLrgOverride();
+  resetLightTankSmlOverride();
+}
+
+bool areBothLightsInAutoMode() {
+  // Проверяем, что оба света в авто режиме
+  return !lightTankLrgManualOverride && !lightTankSmlManualOverride;
+}
+
+bool areBothLightsOn() {
+  // Проверяем, что оба света включены
+  return lightTankLrgState && lightTankSmlState;
+}

@@ -3,6 +3,7 @@
 #include "../utils/html_templates.h"
 #include "../../../include/web_server.h"
 #include "../../../include/logger.h"
+#include "../../../include/config.h"
 
 extern WebServer server;
 
@@ -16,8 +17,8 @@ void handleGraphPage(String type, const String &label, const String &color)
     html += "<div class=\"card-header\"><i class=\"bi bi-graph-up\"></i> Выбор датчика</div>\n";
     html += "<div class=\"card-body\">\n";
     html += "<div class=\"btn-group\" role=\"group\">\n";
-    html += "<a class=\"btn " + String(type == "tank20" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/tank20\">Аквариум20</a>\n";
-    html += "<a class=\"btn " + String(type == "tank10" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/tank10\">Аквариум10</a>\n";
+    html += "<a class=\"btn " + String(type == "tank20" || type == "tankLrg" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/tank20\">" + String(TANK_LRG_NAME) + "</a>\n";
+    html += "<a class=\"btn " + String(type == "tank10" || type == "tankSml" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/tank10\">" + String(TANK_SML_NAME) + "</a>\n";
     html += "<a class=\"btn " + String(type == "room" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/room\">Комната</a>\n";
     html += "<a class=\"btn " + String(type == "humid" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/humid\">Влажность</a>\n";
     html += "<a class=\"btn " + String(type == "press" ? "btn-primary" : "btn-outline-primary") + "\" href=\"/graph/press\">Давление</a>\n";
@@ -29,7 +30,7 @@ void handleGraphPage(String type, const String &label, const String &color)
     html += "<div class=\"card-body\">\n";
     
     // Проверяем, валиден ли тип графика
-    bool isValidType = (type == "tank20" || type == "tank10" || type == "room" || type == "humid" || type == "press");
+    bool isValidType = (type == "tank20" || type == "tank10" || type == "tankLrg" || type == "tankSml" || type == "room" || type == "humid" || type == "press");
     
     if (!isValidType) {
         // Показываем заглушку
@@ -129,7 +130,8 @@ void handleGraphData()
     String json = "{ \"timestamps\": [";
     for (int i = startIdx; i < endIdx; i++)
     {
-        json += "\"" + logs[i].timestamp.timestamp() + "\"";
+        DateTime dt = uint32ToDateTime(logs[i].timestamp);
+        json += "\"" + dt.timestamp() + "\"";
         if (i < endIdx - 1)
             json += ",";
     }
@@ -137,16 +139,16 @@ void handleGraphData()
     for (int i = startIdx; i < endIdx; i++)
     {
         float v = 0;
-        if (type == "tank20")
-            v = logs[i].tank20Temp;
-        else if (type == "tank10")
-            v = logs[i].tank10Temp;
+        if (type == "tank20" || type == "tankLrg")
+            v = int16ToFloat(logs[i].tankLrgTemp);
+        else if (type == "tank10" || type == "tankSml")
+            v = int16ToFloat(logs[i].tankSmlTemp);
         else if (type == "room")
-            v = logs[i].roomTemp;
+            v = int16ToFloat(logs[i].roomTemp);
         else if (type == "humid")
-            v = logs[i].roomHumidity;
+            v = uint16ToFloat(logs[i].roomHumidity);
         else if (type == "press")
-            v = logs[i].roomPressure;
+            v = uint16ToFloat(logs[i].roomPressure);
         json += String(v, 1);
         if (i < endIdx - 1)
             json += ",";

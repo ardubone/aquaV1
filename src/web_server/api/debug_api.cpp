@@ -138,25 +138,25 @@ void handleDebugTemperatureStatus() {
     String json = "{";
     
     // Текущие адреса
-    json += "\"tank20Address\":[";
+    json += "\"tankLrgAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(tank20SensorAddr[i]);
+        json += String(tankLrgSensorAddr[i]);
     }
     json += "],";
     
-    json += "\"tank10Address\":[";
+    json += "\"tankSmlAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(tank10SensorAddr[i]);
+        json += String(tankSmlSensorAddr[i]);
     }
     json += "],";
     
     // Текущие температуры
-    float tank20Temp = getTank20Temperature();
-    float tank10Temp = getTank10Temperature();
-    json += "\"tank20Temp\":" + String(tank20Temp) + ",";
-    json += "\"tank10Temp\":" + String(tank10Temp) + ",";
+    float tankLrgTemp = getLrgTemperature();
+    float tankSmlTemp = getSmlTemperature();
+    json += "\"tankLrgTemp\":" + String(tankLrgTemp) + ",";
+    json += "\"tankSmlTemp\":" + String(tankSmlTemp) + ",";
     
     // Список всех датчиков
     json += "\"sensors\":[";
@@ -193,27 +193,27 @@ void handleDebugTemperatureSetAddress() {
         return;
     }
     
-    String tank20Str = server.arg("tank20");
-    String tank10Str = server.arg("tank10");
+    String tankLrgStr = server.arg("tankLrg");
+    String tankSmlStr = server.arg("tankSml");
     
-    if (tank20Str.length() != 16 || tank10Str.length() != 16) {
+    if (tankLrgStr.length() != 16 || tankSmlStr.length() != 16) {
         server.send(400, "application/json", "{\"error\":\"Invalid address format\"}");
         return;
     }
     
     // Преобразуем строки в адреса
-    DeviceAddress tank20Addr, tank10Addr;
+    DeviceAddress tankLrgAddr, tankSmlAddr;
     
     for (uint8_t i = 0; i < 8; i++) {
-        String byteStr = tank20Str.substring(i * 2, i * 2 + 2);
-        tank20Addr[i] = strtoul(byteStr.c_str(), nullptr, 16);
+        String byteStr = tankLrgStr.substring(i * 2, i * 2 + 2);
+        tankLrgAddr[i] = strtoul(byteStr.c_str(), nullptr, 16);
         
-        byteStr = tank10Str.substring(i * 2, i * 2 + 2);
-        tank10Addr[i] = strtoul(byteStr.c_str(), nullptr, 16);
+        byteStr = tankSmlStr.substring(i * 2, i * 2 + 2);
+        tankSmlAddr[i] = strtoul(byteStr.c_str(), nullptr, 16);
     }
     
     // Устанавливаем адреса
-    if (!setSensorAddress(0, tank20Addr) || !setSensorAddress(1, tank10Addr)) {
+    if (!setSensorAddress(0, tankLrgAddr) || !setSensorAddress(1, tankSmlAddr)) {
         server.send(500, "application/json", "{\"error\":\"Failed to set sensor addresses\"}");
         return;
     }
