@@ -19,10 +19,9 @@
 #include "web_server/api/uv_lamp_api.h"
 #include "web_server/api/logger_api.h"
 
-#ifdef DEBUG_MODE
-#include "web_server/pages/debug_pcf8574_page.h"
-#include "web_server/api/debug_pcf8574_api.h"
-#endif
+// Дебаг страница (всегда доступна)
+#include "web_server/pages/debug_page.h"
+#include "web_server/api/debug_api.h"
 
 // Глобальные объекты
 WebServer server(80);
@@ -118,12 +117,12 @@ void setupWebServer()
     server.on("/stream", handleStreamPage);
     server.on("/stream/frame", handleStreamFrame);
     
-#ifdef DEBUG_MODE
-    // Дебаг PCF8574 (только в DEBUG_MODE)
-    server.on("/debug/pcf8574", handleDebugPcf8574Page);
+    // Дебаг страница (всегда доступна)
+    server.on("/debug", handleDebugPage);
     server.on("/debug/pcf8574/status", handleDebugPcf8574Status);
     server.on("/debug/pcf8574/setpin", HTTP_POST, handleDebugPcf8574SetPin);
-#endif
+    server.on("/debug/temperature/status", handleDebugTemperatureStatus);
+    server.on("/debug/temperature/setaddress", HTTP_POST, handleDebugTemperatureSetAddress);
     
     server.begin();
 }

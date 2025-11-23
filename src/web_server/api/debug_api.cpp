@@ -1,12 +1,15 @@
-// debug_pcf8574_api.cpp
-#include "debug_pcf8574_api.h"
+// debug_api.cpp
+#include "debug_api.h"
 #include "../../../include/web_server.h"
 #include "../../../include/config.h"
+#include "../../../include/temperature.h"
 #include "../../pcf8574_manager.h"
+#include <EEPROM.h>
 
 extern WebServer server;
 extern PCF8574Manager pcfManager;
 
+// PCF8574 API
 void handleDebugPcf8574Status() {
     if (!isPcf8574Initialized) {
         server.send(500, "application/json", "{\"error\":\"PCF8574 not initialized\"}");
@@ -116,5 +119,105 @@ void handleDebugPcf8574SetPin() {
     } else {
         server.send(500, "application/json", "{\"error\":\"Failed to set pin\"}");
     }
+}
+
+// Temperature sensors API
+void handleDebugTemperatureStatus() {
+    if (!isDs18b20Initialized) {
+        server.send(500, "application/json", "{\"error\":\"DS18B20 not initialized\"}");
+        return;
+    }
+    
+    // Получаем все подключенные датчики
+    DeviceAddress addresses[16]; // Максимум 16 датчиков
+    uint8_t sensorCount = getAllConnectedSensors(addresses, 16);
+    
+    // Запрашиваем температуру (setWaitForConversion(true) уже установлен, поэтому ждем автоматически)
+    requestTemperatures();
+    
+    String json = "{";
+    
+    // Текущие адреса
+    json += "\"tank20Address\":[";
+    for (uint8_t i = 0; i < 8; i++) {
+        if (i > 0) json += ",";
+        json += String(tank20SensorAddr[i]);
+    }
+    json += "],";
+    
+    json += "\"tank10Address\":[";
+    for (uint8_t i = 0; i < 8; i++) {
+        if (i > 0) json += ",";
+        json += String(tank10SensorAddr[i]);
+    }
+    json += "],";
+    
+    // Текущие температуры
+    float tank20Temp = getTank20Temperature();
+    float tank10Temp = getTank10Temperature();
+    json += "\"tank20Temp\":" + String(tank20Temp) + ",";
+    json += "\"tank10Temp\":" + String(tank10Temp) + ",";
+    
+    // Список всех датчиков
+    json += "\"sensors\":[";
+    for (uint8_t i = 0; i < sensorCount; i++) {
+        if (i > 0) json += ",";
+        json += "{";
+        json += "\"address\":[";
+        for (uint8_t j = 0; j < 8; j++) {
+            if (j > 0) json += ",";
+            json += String(addresses[i][j]);
+        }
+        json += "],";
+        // Используем функцию из temperature.cpp через extern
+        // Запрашиваем температуру для конкретного адреса
+        requestTemperatures(); // Уже вызвано выше, но для надежности вызываем снова
+        float temp = sensors.getTempC(addresses[i]);
+        json += "\"temp\":" + String(temp);
+        json += "}";
+    }
+    json += "]";
+    
+    json += "}";
+    server.send(200, "application/json", json);
+}
+
+void handleDebugTemperatureSetAddress() {
+    if (server.method() != HTTP_POST) {
+        server.send(405, "text/plain", "Method Not Allowed");
+        return;
+    }
+    
+    if (!isDs18b20Initialized) {
+        server.send(500, "application/json", "{\"error\":\"DS18B20 not initialized\"}");
+        return;
+    }
+    
+    String tank20Str = server.arg("tank20");
+    String tank10Str = server.arg("tank10");
+    
+    if (tank20Str.length() != 16 || tank10Str.length() != 16) {
+        server.send(400, "application/json", "{\"error\":\"Invalid address format\"}");
+        return;
+    }
+    
+    // Преобразуем строки в адреса
+    DeviceAddress tank20Addr, tank10Addr;
+    
+    for (uint8_t i = 0; i < 8; i++) {
+        String byteStr = tank20Str.substring(i * 2, i * 2 + 2);
+        tank20Addr[i] = strtoul(byteStr.c_str(), nullptr, 16);
+        
+        byteStr = tank10Str.substring(i * 2, i * 2 + 2);
+        tank10Addr[i] = strtoul(byteStr.c_str(), nullptr, 16);
+    }
+    
+    // Устанавливаем адреса
+    if (!setSensorAddress(0, tank20Addr) || !setSensorAddress(1, tank10Addr)) {
+        server.send(500, "application/json", "{\"error\":\"Failed to set sensor addresses\"}");
+        return;
+    }
+    
+    server.send(200, "application/json", "{\"success\":true}");
 }
 

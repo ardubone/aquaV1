@@ -66,10 +66,7 @@ String generateNavMenu(const String& activePage) {
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "wifi" ? activeClass : emptyClass) + "\" href=\"/wifi\"><i class=\"bi bi-wifi\"></i> WiFi</a></li>\n";
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "autofeeder" ? activeClass : emptyClass) + "\" href=\"/autofeeder\"><i class=\"bi bi-egg\"></i> Кормушка</a></li>\n";
     html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "stream" ? activeClass : emptyClass) + "\" href=\"/stream\"><i class=\"bi bi-camera-video\"></i> Трансляция</a></li>\n";
-    
-#ifdef DEBUG_MODE
-    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "debug_pcf8574" ? activeClass : emptyClass) + "\" href=\"/debug/pcf8574\"><i class=\"bi bi-tools\"></i> Дебаг PCF8574</a></li>\n";
-#endif
+    html += "<li class=\"nav-item\"><a class=\"nav-link" + (activePage == "debug" ? activeClass : emptyClass) + "\" href=\"/debug\"><i class=\"bi bi-tools\"></i> Дебаг</a></li>\n";
     
     html += "</ul></div></div></nav>\n";
     return html;

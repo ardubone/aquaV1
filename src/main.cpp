@@ -127,8 +127,8 @@ void setup()
   }
   delay(500);
   
-  // Инициализация DS18B20
-  sensors.begin();
+  // Инициализация DS18B20 (загружает адреса из EEPROM)
+  initTemperatureSensors();
   if (sensors.getDeviceCount() == 0)
   {
 #ifdef DEBUG_MODE
