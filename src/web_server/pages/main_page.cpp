@@ -52,8 +52,8 @@ void handleMainPage()
     html += "<div class=\"card\">\n";
     html += "<div class=\"card-header\"><i class=\"bi bi-thermometer-half\"></i> Аквариумы</div>\n";
     html += "<div class=\"card-body\">\n";
-    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> " + String(TANK_LRG_NAME) + ": <span class=\"value\">" + String(getLrgTemperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
-    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> " + String(TANK_SML_NAME) + ": <span class=\"value\">" + String(getSmlTemperature(), 1) + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-1\"><i class=\"bi bi-droplet\"></i> " + String(TANK_LRG_NAME) + ": <span class=\"value\">" + getLrgTemperatureString() + "</span><span class=\"unit\">°C</span></p>\n";
+    html += "<p class=\"mb-0\"><i class=\"bi bi-droplet\"></i> " + String(TANK_SML_NAME) + ": <span class=\"value\">" + getSmlTemperatureString() + "</span><span class=\"unit\">°C</span></p>\n";
     html += "</div></div></div>\n";
 
     // Данные комнаты

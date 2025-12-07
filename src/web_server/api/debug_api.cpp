@@ -123,40 +123,50 @@ void handleDebugPcf8574SetPin() {
 
 // Temperature sensors API
 void handleDebugTemperatureStatus() {
-    if (!isDs18b20Initialized) {
-        server.send(500, "application/json", "{\"error\":\"DS18B20 not initialized\"}");
-        return;
-    }
+    rescanTemperatureSensors();
     
-    // Получаем все подключенные датчики
-    DeviceAddress addresses[16]; // Максимум 16 датчиков
-    uint8_t sensorCount = getAllConnectedSensors(addresses, 16);
-    
-    // Запрашиваем температуру (setWaitForConversion(true) уже установлен, поэтому ждем автоматически)
+    // Всегда пытаемся запросить температуру
     requestTemperatures();
+    
+    uint8_t deviceCount = sensors.getDeviceCount();
+    
+    // Используем константы из config.h напрямую
+    // extern DeviceAddress defaultTankLrgSensorAddr; // Удалено
+    // extern DeviceAddress defaultTankSmlSensorAddr; // Удалено
+    
+    bool tankLrgConnected = isAddressValid(TEMP_SENSOR_ADDR_TANK_LRG);
+    bool tankSmlConnected = isAddressValid(TEMP_SENSOR_ADDR_TANK_SML);
     
     String json = "{";
     
-    // Текущие адреса
+    // Текущие адреса (всегда возвращаем дефолтные из конфига)
     json += "\"tankLrgAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(tankLrgSensorAddr[i]);
+        json += String(TEMP_SENSOR_ADDR_TANK_LRG[i]);
     }
     json += "],";
     
     json += "\"tankSmlAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(tankSmlSensorAddr[i]);
+        json += String(TEMP_SENSOR_ADDR_TANK_SML[i]);
     }
     json += "],";
+    
+    // Получаем все подключенные датчики
+    DeviceAddress addresses[16]; // Максимум 16 датчиков
+    uint8_t sensorCount = getAllConnectedSensors(addresses, 16);
     
     // Текущие температуры
     float tankLrgTemp = getLrgTemperature();
     float tankSmlTemp = getSmlTemperature();
+    
     json += "\"tankLrgTemp\":" + String(tankLrgTemp) + ",";
     json += "\"tankSmlTemp\":" + String(tankSmlTemp) + ",";
+    json += "\"tankLrgConnected\":" + String(tankLrgConnected ? "true" : "false") + ",";
+    json += "\"tankSmlConnected\":" + String(tankSmlConnected ? "true" : "false") + ",";
+    json += "\"deviceCount\":" + String(deviceCount) + ",";
     
     // Список всех датчиков
     json += "\"sensors\":[";
@@ -169,9 +179,7 @@ void handleDebugTemperatureStatus() {
             json += String(addresses[i][j]);
         }
         json += "],";
-        // Используем функцию из temperature.cpp через extern
-        // Запрашиваем температуру для конкретного адреса
-        requestTemperatures(); // Уже вызвано выше, но для надежности вызываем снова
+        // Читаем температуру для конкретного адреса (уже запрошена выше)
         float temp = sensors.getTempC(addresses[i]);
         json += "\"temp\":" + String(temp);
         json += "}";

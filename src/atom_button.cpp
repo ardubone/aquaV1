@@ -17,8 +17,8 @@ void initAtomButton() {
     pinMode(ATOM_BUTTON_PIN, INPUT_PULLUP);
     lastButtonState = digitalRead(ATOM_BUTTON_PIN) == LOW;
     buttonState = lastButtonState;
-    Serial.print(F("[ATOM_BUTTON] Инициализация кнопки на GPIO 39, начальное состояние: "));
-    Serial.println(buttonState ? F("нажата") : F("отпущена"));
+    // Serial.print(F("[ATOM_BUTTON] Инициализация кнопки на GPIO 39, начальное состояние: "));
+    // Serial.println(buttonState ? F("нажата") : F("отпущена"));
 }
 
 void updateAtomButton() {
@@ -38,18 +38,18 @@ void updateAtomButton() {
             if (buttonState && !previousState) {
                 unsigned long currentTime = millis();
                 
-                Serial.print(F("[ATOM_BUTTON] Нажатие! waitingForDoubleClick="));
-                Serial.print(waitingForDoubleClick);
-                if (waitingForDoubleClick) {
-                    unsigned long timeDiff = currentTime - lastClickTime;
-                    Serial.print(F(", timeDiff="));
-                    Serial.print(timeDiff);
-                    Serial.print(F(" мс, timeout="));
-                    Serial.print(DOUBLE_CLICK_TIMEOUT_MS);
-                    Serial.println(F(" мс"));
-                } else {
-                    Serial.println();
-                }
+                // Serial.print(F("[ATOM_BUTTON] Нажатие! waitingForDoubleClick="));
+                // Serial.print(waitingForDoubleClick);
+                // if (waitingForDoubleClick) {
+                //     unsigned long timeDiff = currentTime - lastClickTime;
+                //     Serial.print(F(", timeDiff="));
+                //     Serial.print(timeDiff);
+                //     Serial.print(F(" мс, timeout="));
+                //     Serial.print(DOUBLE_CLICK_TIMEOUT_MS);
+                //     Serial.println(F(" мс"));
+                // } else {
+                //     Serial.println();
+                // }
                 
                 // Проверка на двойной клик
                 if (waitingForDoubleClick) {
@@ -60,14 +60,14 @@ void updateAtomButton() {
                         waitingForDoubleClick = false;
                         // Отменяем одиночный клик, если он еще не был обработан
                         singleClickFlag = false;
-                        Serial.print(F("[ATOM_BUTTON] ✓ Двойной клик обнаружен! Интервал: "));
-                        Serial.print(timeDiff);
-                        Serial.println(F(" мс"));
+                        // Serial.print(F("[ATOM_BUTTON] ✓ Двойной клик обнаружен! Интервал: "));
+                        // Serial.print(timeDiff);
+                        // Serial.println(F(" мс"));
                     } else {
                         // Прошло слишком много времени, это новый первый клик
-                        Serial.print(F("[ATOM_BUTTON] Таймаут первого клика истек ("));
-                        Serial.print(timeDiff);
-                        Serial.println(F(" мс), регистрируем как новый первый клик"));
+                        // Serial.print(F("[ATOM_BUTTON] Таймаут первого клика истек ("));
+                        // Serial.print(timeDiff);
+                        // Serial.println(F(" мс), регистрируем как новый первый клик"));
                         waitingForDoubleClick = true;
                         lastClickTime = currentTime;
                         singleClickFlag = false;
@@ -80,18 +80,18 @@ void updateAtomButton() {
                     // Сбрасываем флаги, чтобы не было ложных срабатываний
                     singleClickFlag = false;
                     doubleClickFlag = false;
-                    Serial.println(F("[ATOM_BUTTON] Первый клик зарегистрирован, ждем второй..."));
+                    // Serial.println(F("[ATOM_BUTTON] Первый клик зарегистрирован, ждем второй..."));
                 }
             }
             
             // Обработка отпускания (переход с true на false - кнопка отпущена)
             if (!buttonState && previousState) {
                 // Кнопка отпущена - ничего не делаем, ждем таймаут или второй клик
-                if (waitingForDoubleClick) {
-                    Serial.print(F("[ATOM_BUTTON] Кнопка отпущена, ждем второй клик. Прошло: "));
-                    Serial.print(millis() - lastClickTime);
-                    Serial.println(F(" мс"));
-                }
+                // if (waitingForDoubleClick) {
+                //     Serial.print(F("[ATOM_BUTTON] Кнопка отпущена, ждем второй клик. Прошло: "));
+                //     Serial.print(millis() - lastClickTime);
+                //     Serial.println(F(" мс"));
+                // }
             }
         }
     }
@@ -104,12 +104,13 @@ void updateAtomButton() {
         // Устанавливаем флаг только если двойной клик еще не был обнаружен
         if (!doubleClickFlag) {
             singleClickFlag = true;
-            Serial.print(F("[ATOM_BUTTON] Одиночный клик обнаружен (таймаут), прошло: "));
-            Serial.print(millis() - lastClickTime);
-            Serial.println(F(" мс"));
-        } else {
-            Serial.println(F("[ATOM_BUTTON] Таймаут, но doubleClickFlag уже установлен, пропускаем"));
+            // Serial.print(F("[ATOM_BUTTON] Одиночный клик обнаружен (таймаут), прошло: "));
+            // Serial.print(millis() - lastClickTime);
+            // Serial.println(F(" мс"));
         }
+        // else {
+        //     Serial.println(F("[ATOM_BUTTON] Таймаут, но doubleClickFlag уже установлен, пропускаем"));
+        // }
         waitingForDoubleClick = false;
     }
 }
@@ -117,7 +118,7 @@ void updateAtomButton() {
 bool getAtomButtonSingleClick() {
     if (singleClickFlag) {
         singleClickFlag = false;
-        Serial.println(F("[ATOM_BUTTON] Одиночный клик обнаружен"));
+        // Serial.println(F("[ATOM_BUTTON] Одиночный клик обнаружен"));
         return true;
     }
     return false;
@@ -129,7 +130,7 @@ bool getAtomButtonDoubleClick() {
         // Убеждаемся, что одиночный клик не будет обработан после двойного
         singleClickFlag = false;
         waitingForDoubleClick = false;
-        Serial.println(F("[ATOM_BUTTON] Двойной клик возвращен (getAtomButtonDoubleClick)"));
+        // Serial.println(F("[ATOM_BUTTON] Двойной клик возвращен (getAtomButtonDoubleClick)"));
         return true;
     }
     return false;

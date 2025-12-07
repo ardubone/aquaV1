@@ -4,10 +4,14 @@
 #include <DallasTemperature.h>
 
 // Дебаг режим - раскомментируйте для включения
- #define DEBUG_MODE
+// #define DEBUG_MODE
 
 extern DeviceAddress tankLrgSensorAddr;
 extern DeviceAddress tankSmlSensorAddr;
+
+// Адреса температурных датчиков (Дефолтные значения)
+const DeviceAddress TEMP_SENSOR_ADDR_TANK_LRG = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
+const DeviceAddress TEMP_SENSOR_ADDR_TANK_SML = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
 
 // Флаги состояния компонентов
 extern bool isRtcInitialized;

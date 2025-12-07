@@ -47,6 +47,7 @@ bool isDs18b20Initialized = false;
 bool isPcf8574Initialized = false;
 bool isAutoFeederInitialized = false;
 bool isCameraInitialized = false;
+bool isEepromReady = false;
 
 void setup()
 {
@@ -115,8 +116,21 @@ void setup()
   }
   delay(500);
   
-  // Инициализация DS18B20 (загружает адреса из EEPROM)
+  // Инициализация EEPROM до работы с датчиками
+  if (!EEPROM.begin(EEPROM_SIZE)) {
+#ifdef DEBUG_MODE
+    Serial.println(F("EEPROM initialization failed - continuing in DEBUG_MODE"));
+#else
+    Serial.println(F("EEPROM initialization failed!"));
+#endif
+    isEepromReady = false;
+  } else {
+    isEepromReady = true;
+  }
+
+  // Инициализация DS18B20 (адреса будут синхронизированы в модуле)
   initTemperatureSensors();
+  debugScanOneWireBus(); // Сканируем и выводим в Serial все найденные датчики
   if (sensors.getDeviceCount() == 0)
   {
 #ifdef DEBUG_MODE
@@ -175,19 +189,11 @@ void setup()
   setupWebServer();
   initTimeManager();
   
-  // Инициализация EEPROM и логгера
-  if (!EEPROM.begin(EEPROM_SIZE)) {
-#ifdef DEBUG_MODE
-    Serial.println(F("EEPROM initialization failed - continuing in DEBUG_MODE"));
-    initLogger(); // Инициализируем без загрузки из EEPROM
-#else
-    Serial.println(F("EEPROM initialization failed!"));
-    initLogger(); // Инициализируем без загрузки из EEPROM
-#endif
-  } else {
+  // Инициализация логгера
+  if (isEepromReady) {
     loadLogsFromEEPROM(); // Загружаем логи из EEPROM
-    initLogger(); // Инициализируем логгер (не очищает загруженные логи)
   }
+  initLogger(); // Инициализируем логгер (не очищает загруженные логи)
   
   // Инициализация автокормушек
 #ifdef DEBUG_MODE

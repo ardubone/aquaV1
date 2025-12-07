@@ -60,7 +60,9 @@ void handleDebugPage() {
     html += "<div class=\"card-header\">Текущие назначения</div>\n";
     html += "<div class=\"card-body\">\n";
     html += "<p><strong>" + String(TANK_LRG_NAME) + ":</strong> <span id=\"tankLrgAddress\">Загрузка...</span></p>\n";
+    html += "<p class=\"mb-2\"><small class=\"text-muted\">Статус: <span id=\"tankLrgStatus\" class=\"badge bg-secondary\">-</span></small></p>\n";
     html += "<p><strong>" + String(TANK_SML_NAME) + ":</strong> <span id=\"tankSmlAddress\">Загрузка...</span></p>\n";
+    html += "<p class=\"mb-0\"><small class=\"text-muted\">Статус: <span id=\"tankSmlStatus\" class=\"badge bg-secondary\">-</span></small></p>\n";
     html += "</div></div></div>\n";
     html += "<div class=\"col-md-6\">\n";
     html += "<div class=\"card\">\n";
@@ -68,6 +70,7 @@ void handleDebugPage() {
     html += "<div class=\"card-body\">\n";
     html += "<p><strong>" + String(TANK_LRG_NAME) + ":</strong> <span id=\"tankLrgTemp\">-</span> °C</p>\n";
     html += "<p><strong>" + String(TANK_SML_NAME) + ":</strong> <span id=\"tankSmlTemp\">-</span> °C</p>\n";
+    html += "<p class=\"text-muted mb-0\">Найдено датчиков на шине: <span id=\"deviceCount\">0</span></p>\n";
     html += "</div></div></div>\n";
     html += "</div>\n";
     
@@ -212,6 +215,15 @@ void handleDebugPage() {
     html += "      // Обновляем температуры\n";
     html += "      document.getElementById('tankLrgTemp').textContent = data.tankLrgTemp.toFixed(1);\n";
     html += "      document.getElementById('tankSmlTemp').textContent = data.tankSmlTemp.toFixed(1);\n";
+    html += "      document.getElementById('deviceCount').textContent = data.deviceCount;\n";
+    html += "      \n";
+    html += "      const tankLrgStatus = document.getElementById('tankLrgStatus');\n";
+    html += "      tankLrgStatus.textContent = data.tankLrgConnected ? 'подключен' : 'нет связи';\n";
+    html += "      tankLrgStatus.className = data.tankLrgConnected ? 'badge bg-success' : 'badge bg-danger';\n";
+    html += "      \n";
+    html += "      const tankSmlStatus = document.getElementById('tankSmlStatus');\n";
+    html += "      tankSmlStatus.textContent = data.tankSmlConnected ? 'подключен' : 'нет связи';\n";
+    html += "      tankSmlStatus.className = data.tankSmlConnected ? 'badge bg-success' : 'badge bg-danger';\n";
     html += "      \n";
     html += "      // Обновляем выпадающие списки\n";
     html += "      const tankLrgSelect = document.getElementById('tankLrgSelect');\n";
