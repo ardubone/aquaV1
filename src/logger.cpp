@@ -110,7 +110,11 @@ void initLogger() {
 // Функции конвертации теперь inline в logger.h
 
 bool isValidTemperature(float temp) {
-    return !isnan(temp) && temp > -50 && temp < 100;
+    if (isnan(temp)) return false;
+    if (temp <= -50.0f || temp >= 100.0f) return false;
+    // DS18B20 иногда возвращает 85°C при ошибке/неуспевшей конверсии
+    if (fabsf(temp - DS18B20_INVALID_TEMP_C) <= DS18B20_INVALID_TEMP_EPS) return false;
+    return true;
 }
 
 bool isValidHumidity(float humidity) {

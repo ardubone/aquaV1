@@ -24,7 +24,9 @@ AutoFeeder::AutoFeeder(FeederType type)
       _isRelayOn(false), _isLimitIgnored(false), _limitIgnoreStartTime(0),
       _lastScheduleCheck(0), _isBlockedAfterLimitTrigger(false),
       _lastLimitTriggeredTime(0), _limitTriggered(false),
-      _currentFeedingType(FEEDING_AUTO) {
+      _currentFeedingType(FEEDING_AUTO),
+      _limitSeen(false), _limitFirstSeenTime(0),
+      _relayStartTime(0), _scheduledStopTime(0) {
 }
 
 void AutoFeeder::init(PCF8574Manager* pcfManager, RTC_DS1307* rtc) {
@@ -92,13 +94,19 @@ bool AutoFeeder::activateInternal(FeedingType type) {
         return false; // Кормушка уже активирована
     }
     
-    // Проверяем, не нажат ли уже концевик
+    // Проверяем, не нажат ли уже концевик (только если прошло меньше 5 секунд с последнего срабатывания)
     bool limitPressed = (_type == FEEDER_TANK10) ? 
         _pcfManager->getFeederLimitTank10() : _pcfManager->getFeederLimitTank20();
     
+    // Разрешаем запуск если концевик нажат, но прошло больше 5 секунд с последнего срабатывания
     if (limitPressed) {
-        Serial.println(F("[AUTOFEEDER] Активация отменена - концевик уже нажат"));
-        return false;
+        if (_isBlockedAfterLimitTrigger && 
+            (currentTime - _lastLimitTriggeredTime < 5000)) {
+            Serial.println(F("[AUTOFEEDER] Активация отменена - концевик нажат, недавнее срабатывание"));
+            return false;
+        } else {
+            Serial.println(F("[AUTOFEEDER] Концевик нажат, но прошло достаточно времени - разрешаем запуск"));
+        }
     }
     
     // Сбрасываем блокировку после срабатывания концевика
@@ -121,6 +129,7 @@ bool AutoFeeder::activateInternal(FeedingType type) {
     }
     
     _isRelayOn = true;
+    _relayStartTime = millis();
 #ifdef DEBUG_MODE
     _relayOnTime = (_rtc && isRtcInitialized) ? _rtc->now() : getMockTime();
 #else
@@ -128,6 +137,11 @@ bool AutoFeeder::activateInternal(FeedingType type) {
 #endif
     _limitTriggered = false;
     _currentFeedingType = type;  // Сохраняем тип кормления
+    
+    // Сбрасываем latched-состояние концевика
+    _limitSeen = false;
+    _limitFirstSeenTime = 0;
+    _scheduledStopTime = 0;
     
     delay(AUTOFEEDER_RELAY_DELAY);
     
@@ -143,14 +157,51 @@ bool AutoFeeder::activateManual() {
 }
 
 void AutoFeeder::checkLimitSwitch() {
-    if (!_pcfManager || !_isRelayOn || _isLimitIgnored) return;
+    if (!_pcfManager || !_isRelayOn) return;
+    
+    unsigned long currentTime = millis();
+    
+    // Игнорируем концевик первые AUTOFEEDER_LIMIT_IGNORE_TIME мс после запуска
+    if (_isLimitIgnored) {
+        if ((currentTime - _limitIgnoreStartTime) >= AUTOFEEDER_LIMIT_IGNORE_TIME) {
+            _isLimitIgnored = false;
+            Serial.print(F("[AUTOFEEDER] Конец игнорирования концевика ("));
+            Serial.print(_type == FEEDER_TANK10 ? F("Tank10") : F("Tank20"));
+            Serial.println(F(")"));
+        } else {
+            return; // Ещё игнорируем
+        }
+    }
     
     bool limitPressed = (_type == FEEDER_TANK10) ? 
         _pcfManager->getFeederLimitTank10() : 
         _pcfManager->getFeederLimitTank20();
     
-    if (limitPressed) {
-        Serial.print(F("[AUTOFEEDER] Концевик нажат ("));
+    // Latched-логика: отслеживаем первый LOW и планируем остановку
+    if (limitPressed && !_limitSeen) {
+        // Первый раз увидели LOW
+        _limitFirstSeenTime = currentTime;
+        _limitSeen = true;
+        Serial.print(F("[AUTOFEEDER] Концевик нажат (первое обнаружение) ("));
+        Serial.print(_type == FEEDER_TANK10 ? F("Tank10") : F("Tank20"));
+        Serial.println(F(")"));
+    }
+    
+    // Если видели LOW и прошло достаточно времени для дебаунса, планируем остановку
+    if (_limitSeen && !_scheduledStopTime) {
+        if ((currentTime - _limitFirstSeenTime) >= AUTOFEEDER_LIMIT_DEBOUNCE_MS) {
+            _scheduledStopTime = currentTime + AUTOFEEDER_STOP_DELAY_MS;
+            Serial.print(F("[AUTOFEEDER] Запланирована остановка через "));
+            Serial.print(AUTOFEEDER_STOP_DELAY_MS);
+            Serial.print(F(" мс ("));
+            Serial.print(_type == FEEDER_TANK10 ? F("Tank10") : F("Tank20"));
+            Serial.println(F(")"));
+        }
+    }
+    
+    // Выполняем запланированную остановку
+    if (_scheduledStopTime && currentTime >= _scheduledStopTime) {
+        Serial.print(F("[AUTOFEEDER] Остановка мотора ("));
         Serial.print(_type == FEEDER_TANK10 ? F("Tank10") : F("Tank20"));
         Serial.println(F(")"));
         
@@ -162,6 +213,7 @@ void AutoFeeder::checkLimitSwitch() {
         }
         
         _isRelayOn = false;
+        _limitTriggered = true;
 #ifdef DEBUG_MODE
         _relayOffTime = (_rtc && isRtcInitialized) ? _rtc->now() : getMockTime();
         _limitTriggerTime = (_rtc && isRtcInitialized) ? _rtc->now() : getMockTime();
@@ -173,7 +225,6 @@ void AutoFeeder::checkLimitSwitch() {
 #endif
         
         // Логируем кормление
-        // Используем время начала кормления как timestamp
         DateTime logTimestamp = (_relayOnTime.unixtime() > 0) ? _relayOnTime : now;
         _logger.addLog(logTimestamp, _currentFeedingType, _relayOnTime, _relayOffTime, 
                       _limitTriggered, _limitTriggerTime);
@@ -184,9 +235,14 @@ void AutoFeeder::checkLimitSwitch() {
         _limitTriggered = false;
         
         // Устанавливаем флаг блокировки и время срабатывания
-        unsigned long currentTime = millis();
         _lastLimitTriggeredTime = currentTime;
         _isBlockedAfterLimitTrigger = true;
+        
+        // Сбрасываем latched-состояние
+        _limitSeen = false;
+        _limitFirstSeenTime = 0;
+        _scheduledStopTime = 0;
+        
         Serial.println(F("[AUTOFEEDER] Установлена блокировка повторной активации"));
     }
 }
@@ -228,16 +284,7 @@ void AutoFeeder::update() {
     
     unsigned long currentTime = millis();
     
-    // Проверка таймера игнорирования концевика
-    if (_isLimitIgnored && 
-        (currentTime - _limitIgnoreStartTime) > AUTOFEEDER_LIMIT_IGNORE_TIME) {
-        _isLimitIgnored = false;
-        Serial.print(F("[AUTOFEEDER] Конец игнорирования концевика ("));
-        Serial.print(_type == FEEDER_TANK10 ? F("Tank10") : F("Tank20"));
-        Serial.println(F(")"));
-    }
-    
-    // Проверка концевика
+    // Проверка концевика (включает логику игнорирования)
     checkLimitSwitch();
     
     // Снимаем блокировку после истечения времени

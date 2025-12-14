@@ -3,8 +3,10 @@
 #include "../../../include/web_server.h"
 #include "../../../include/autofeeder.h"
 #include "../../../include/feeder_logger.h"
+#include "../../pcf8574_manager.h"
 
 extern WebServer server;
+extern PCF8574Manager pcfManager;
 
 // Вспомогательная функция для получения логов в JSON
 String getFeederLogsJSON(const FeederLogger& logger) {
@@ -73,12 +75,31 @@ String getScheduleJSON(AutoFeederScheduler& scheduler) {
 // API для кормушки Tank10
 void handleAutoFeederTank10Activate() {
     AutoFeeder* feeder = getFeederTank10();
-    if (feeder) {
-        bool result = feeder->activateManual();
-        String json = "{\"success\":" + String(result ? "true" : "false") + "}";
-        server.send(200, "application/json", json);
+    if (!feeder) {
+        server.send(500, "application/json", "{\"success\":false,\"error\":\"not_initialized\"}");
+        return;
+    }
+    
+    // Проверяем состояние перед активацией
+    if (feeder->isRelayOn()) {
+        server.send(409, "application/json", "{\"success\":false,\"error\":\"already_running\"}");
+        return;
+    }
+    
+    bool result = feeder->activateManual();
+    if (result) {
+        server.send(200, "application/json", "{\"success\":true}");
     } else {
-        server.send(500, "application/json", "{\"error\":\"Feeder not initialized\"}");
+        // Определяем причину отказа
+        String error = "unknown";
+        // Проверяем концевик
+        bool limitPressed = pcfManager.getFeederLimitTank10();
+        if (limitPressed) {
+            error = "limit_busy";
+        } else {
+            error = "activation_failed";
+        }
+        server.send(423, "application/json", "{\"success\":false,\"error\":\"" + error + "\"}");
     }
 }
 
@@ -166,12 +187,31 @@ void handleAutoFeederTank10ScheduleGet() {
 // API для кормушки Tank20
 void handleAutoFeederTank20Activate() {
     AutoFeeder* feeder = getFeederTank20();
-    if (feeder) {
-        bool result = feeder->activateManual();
-        String json = "{\"success\":" + String(result ? "true" : "false") + "}";
-        server.send(200, "application/json", json);
+    if (!feeder) {
+        server.send(500, "application/json", "{\"success\":false,\"error\":\"not_initialized\"}");
+        return;
+    }
+    
+    // Проверяем состояние перед активацией
+    if (feeder->isRelayOn()) {
+        server.send(409, "application/json", "{\"success\":false,\"error\":\"already_running\"}");
+        return;
+    }
+    
+    bool result = feeder->activateManual();
+    if (result) {
+        server.send(200, "application/json", "{\"success\":true}");
     } else {
-        server.send(500, "application/json", "{\"error\":\"Feeder not initialized\"}");
+        // Определяем причину отказа
+        String error = "unknown";
+        // Проверяем концевик
+        bool limitPressed = pcfManager.getFeederLimitTank20();
+        if (limitPressed) {
+            error = "limit_busy";
+        } else {
+            error = "activation_failed";
+        }
+        server.send(423, "application/json", "{\"success\":false,\"error\":\"" + error + "\"}");
     }
 }
 

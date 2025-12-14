@@ -10,15 +10,36 @@
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
-// Переменные для хранения кэшированных значений
-float currentTempLrg = -127.0f;
-float currentTempSml = -127.0f;
+// float currentTempLrg = -127.0f;
+// float currentTempSml = -127.0f;
 
-// Переменные для асинхронного опроса
-unsigned long lastRequestTime = 0;
-bool waitingForConversion = false;
-const unsigned long CONVERSION_TIME = 800; // мс (с запасом для 12 бит)
-const unsigned long POLL_INTERVAL = 2000;  // мс (интервал опроса)
+void printAddress(const DeviceAddress deviceAddress);
+
+// unsigned long lastRequestTime = 0;
+// bool waitingForConversion = false;
+// const unsigned long CONVERSION_TIME = 800;
+// const unsigned long POLL_INTERVAL = 2000;
+
+const uint8_t TEMP_LOG_CAP = 100;
+String tempLogs[TEMP_LOG_CAP];
+uint8_t tempLogHead = 0;
+uint8_t tempLogCount = 0;
+
+// static uint8_t owSearch(DeviceAddress* addresses, uint8_t max) {
+//     oneWire.reset_search();
+//     uint8_t count = 0;
+//     uint8_t addr[8];
+//     while (count < max && oneWire.search(addr)) {
+//         if (OneWire::crc8(addr, 7) != addr[7]) {
+//             continue;
+//         }
+//         memcpy(addresses[count], addr, sizeof(DeviceAddress));
+//         count++;
+//     }
+//     return count;
+// }
+
+// static void assignActiveSensorAddresses() { /* отключено */ }
 
 // Текущие адреса датчиков (используют только дефолтные из конфига)
 // Переменные оставлены для обратной совместимости, но везде используются дефолтные адреса напрямую
@@ -26,7 +47,7 @@ DeviceAddress tankLrgSensorAddr;
 DeviceAddress tankSmlSensorAddr;
 
 // Helper для печати адреса
-void printAddress(DeviceAddress deviceAddress) {
+void printAddress(const DeviceAddress deviceAddress) {
     for (uint8_t i = 0; i < 8; i++) {
         if (deviceAddress[i] < 16) Serial.print("0");
         Serial.print(deviceAddress[i], HEX);
@@ -105,9 +126,7 @@ void initTemperatureSensors() {
     pinMode(ONE_WIRE_BUS, INPUT_PULLUP);
     sensors.begin();
     
-    // ВАЖНО: Отключаем автоматическое ожидание конвертации
-    // Теперь мы сами будем управлять временем ожидания, чтобы не блокировать loop()
-    sensors.setWaitForConversion(false);
+    sensors.setWaitForConversion(true);
     
     // Инициализируем переменные дефолтными адресами для обратной совместимости
     // Но везде в коде используем константы из конфига напрямую
@@ -115,77 +134,96 @@ void initTemperatureSensors() {
     memcpy(tankSmlSensorAddr, TEMP_SENSOR_ADDR_TANK_SML, sizeof(DeviceAddress));
     
     Serial.println(F("[TEMP] Используются дефолтные адреса датчиков из конфигурации"));
+    {
+        uint8_t deviceCount = sensors.getDeviceCount();
+        String msg = String("[TEMP] devices=") + String(deviceCount);
+        Serial.println(msg);
+        tempLogs[tempLogHead] = msg;
+        tempLogHead = (tempLogHead + 1) % TEMP_LOG_CAP;
+        if (tempLogCount < TEMP_LOG_CAP) tempLogCount++;
+        if (deviceCount > 0) {
+            DeviceAddress addr;
+            for (uint8_t i = 0; i < deviceCount; i++) {
+                if (sensors.getAddress(addr, i)) {
+                    Serial.print(F("[TEMP] dev[")); Serial.print(i); Serial.print(F("]="));
+                    printAddress(addr);
+                    Serial.println();
+                }
+            }
+        }
+        Serial.print(F("[TEMP] default Lrg="));
+        printAddress(TEMP_SENSOR_ADDR_TANK_LRG);
+        Serial.println();
+        Serial.print(F("[TEMP] default Sml="));
+        printAddress(TEMP_SENSOR_ADDR_TANK_SML);
+        Serial.println();
+        bool vL = isAddressValid(TEMP_SENSOR_ADDR_TANK_LRG);
+        bool vS = isAddressValid(TEMP_SENSOR_ADDR_TANK_SML);
+        String vmsg = String("[TEMP] valid Lrg=") + String(vL ? "1" : "0") + String(", Sml=") + String(vS ? "1" : "0");
+        Serial.println(vmsg);
+        tempLogs[tempLogHead] = vmsg;
+        tempLogHead = (tempLogHead + 1) % TEMP_LOG_CAP;
+        if (tempLogCount < TEMP_LOG_CAP) tempLogCount++;
+    }
+    // assignActiveSensorAddresses();
     
-    // Делаем первый запрос сразу
     sensors.requestTemperatures();
-    lastRequestTime = millis();
-    waitingForConversion = true;
 }
 
 void rescanTemperatureSensors() {
     sensors.begin();
-    sensors.setWaitForConversion(false);
-}
+    sensors.setWaitForConversion(true);
 
-// Функция должна вызываться в главном цикле (loop)
-// Она управляет процессом опроса датчиков без блокировок
-void requestTemperatures() {
-    unsigned long currentTime = millis();
+    // Hybrid fallback: если дефолтные адреса не найдены, временно привязываем к найденным датчикам
+    DeviceAddress addresses[2];
+    const uint8_t found = getAllConnectedSensors(addresses, 2);
 
-    // Если ждем завершения конвертации
-    if (waitingForConversion) {
-        // Проверяем, прошло ли достаточно времени
-        if (currentTime - lastRequestTime >= CONVERSION_TIME) {
-            // Время вышло, читаем данные
-            
-            // Читаем Lrg
-            float tempL = sensors.getTempC(TEMP_SENSOR_ADDR_TANK_LRG);
-            if (tempL != DEVICE_DISCONNECTED_C) {
-                 currentTempLrg = tempL;
-            } else {
-                 // Если ошибка чтения, сохраняем маркер ошибки
-                 currentTempLrg = -127.0f;
-            }
+    const bool lrgValid = isAddressValid(tankLrgSensorAddr);
+    const bool smlValid = isAddressValid(tankSmlSensorAddr);
 
-            // Читаем Sml
-            float tempS = sensors.getTempC(TEMP_SENSOR_ADDR_TANK_SML);
-            if (tempS != DEVICE_DISCONNECTED_C) {
-                 currentTempSml = tempS;
-            } else {
-                 currentTempSml = -127.0f;
-            }
-
-            waitingForConversion = false;
-            lastRequestTime = currentTime; // Сброс таймера для интервала опроса
+    if (!lrgValid && found >= 1) {
+        if (setSensorAddress(0, addresses[0])) {
+            Serial.println(F("[TEMP] fallback: Lrg -> dev[0]"));
         }
-    } else {
-        // Если не ждем, проверяем, пора ли делать новый запрос
-        if (currentTime - lastRequestTime >= POLL_INTERVAL) {
-            sensors.requestTemperatures();
-            waitingForConversion = true;
-            lastRequestTime = currentTime;
+    }
+
+    // Если на шине только 1 датчик — не назначаем его как Sml, чтобы не путать каналы
+    if (!smlValid && found >= 2) {
+        if (setSensorAddress(1, addresses[1])) {
+            Serial.println(F("[TEMP] fallback: Sml -> dev[1]"));
         }
     }
 }
 
-// Просто возвращает последнее считанное значение из кэша
+void requestTemperatures() {
+    static unsigned long lastRescanMs = 0;
+    const unsigned long nowMs = millis();
+
+    // Если шина "упала" (0 устройств), периодически пробуем переинициализацию
+    if (sensors.getDeviceCount() == 0 && (nowMs - lastRescanMs) >= DS18B20_RESCAN_INTERVAL_MS) {
+        lastRescanMs = nowMs;
+        rescanTemperatureSensors();
+    }
+
+    sensors.requestTemperatures();
+}
+
 float getLrgTemperature() {
 #ifdef DEBUG_MODE
     if (!isDs18b20Initialized) {
         return getMockTank20Temperature();
     }
 #endif
-    return currentTempLrg;
+    return sensors.getTempC(tankLrgSensorAddr);
 }
 
-// Просто возвращает последнее считанное значение из кэша
 float getSmlTemperature() {
 #ifdef DEBUG_MODE
     if (!isDs18b20Initialized) {
         return getMockTank10Temperature();
     }
 #endif
-    return currentTempSml;
+    return sensors.getTempC(tankSmlSensorAddr);
 }
 
 // Возвращает строковое представление температуры для UI
@@ -235,8 +273,39 @@ bool loadSensorAddressesFromEEPROM() {
 }
 
 bool setSensorAddress(uint8_t tankIndex, DeviceAddress address) {
-    // Не используется - всегда используем только дефолтные адреса из конфига
-    (void)tankIndex;
-    (void)address;
+    if (tankIndex == 0) {
+        memcpy(tankLrgSensorAddr, address, sizeof(DeviceAddress));
+        Serial.print(F("[TEMP] set Lrg addr="));
+        printAddress(tankLrgSensorAddr);
+        Serial.println();
+        return true;
+    } else if (tankIndex == 1) {
+        memcpy(tankSmlSensorAddr, address, sizeof(DeviceAddress));
+        Serial.print(F("[TEMP] set Sml addr="));
+        printAddress(tankSmlSensorAddr);
+        Serial.println();
+        return true;
+    }
     return false;
+}
+
+String getTemperatureLogsJSON() {
+    String json = "{\"logs\":[";
+    for (uint8_t i = 0; i < tempLogCount; i++) {
+        uint8_t idx = (tempLogHead + TEMP_LOG_CAP - tempLogCount + i) % TEMP_LOG_CAP;
+        if (i > 0) json += ",";
+        json += "\"" + tempLogs[idx] + "\"";
+    }
+    json += "]}";
+    return json;
+}
+
+String getTemperatureStatusJSON() {
+    String json = "{";
+    json += "\"waitingForConversion\":false,";
+    json += "\"lastRequestAgeMs\":0,";
+    json += "\"convTimeMs\":0,";
+    json += "\"pollIntervalMs\":0";
+    json += "}";
+    return json;
 }

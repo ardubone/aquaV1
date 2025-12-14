@@ -123,19 +123,18 @@ void handleDebugPcf8574SetPin() {
 
 // Temperature sensors API
 void handleDebugTemperatureStatus() {
-    rescanTemperatureSensors();
-    
-    // Всегда пытаемся запросить температуру
-    requestTemperatures();
-    
     uint8_t deviceCount = sensors.getDeviceCount();
+    if (deviceCount == 0) {
+        rescanTemperatureSensors();
+        deviceCount = sensors.getDeviceCount();
+    }
     
     // Используем константы из config.h напрямую
     // extern DeviceAddress defaultTankLrgSensorAddr; // Удалено
     // extern DeviceAddress defaultTankSmlSensorAddr; // Удалено
     
-    bool tankLrgConnected = isAddressValid(TEMP_SENSOR_ADDR_TANK_LRG);
-    bool tankSmlConnected = isAddressValid(TEMP_SENSOR_ADDR_TANK_SML);
+    bool tankLrgConnected = isAddressValid(tankLrgSensorAddr);
+    bool tankSmlConnected = isAddressValid(tankSmlSensorAddr);
     
     String json = "{";
     
@@ -143,14 +142,14 @@ void handleDebugTemperatureStatus() {
     json += "\"tankLrgAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(TEMP_SENSOR_ADDR_TANK_LRG[i]);
+        json += String(tankLrgSensorAddr[i]);
     }
     json += "],";
     
     json += "\"tankSmlAddress\":[";
     for (uint8_t i = 0; i < 8; i++) {
         if (i > 0) json += ",";
-        json += String(TEMP_SENSOR_ADDR_TANK_SML[i]);
+        json += String(tankSmlSensorAddr[i]);
     }
     json += "],";
     
@@ -166,7 +165,11 @@ void handleDebugTemperatureStatus() {
     json += "\"tankSmlTemp\":" + String(tankSmlTemp) + ",";
     json += "\"tankLrgConnected\":" + String(tankLrgConnected ? "true" : "false") + ",";
     json += "\"tankSmlConnected\":" + String(tankSmlConnected ? "true" : "false") + ",";
+    json += "\"addrValidLrg\":" + String(tankLrgConnected ? "true" : "false") + ",";
+    json += "\"addrValidSml\":" + String(tankSmlConnected ? "true" : "false") + ",";
+    json += "\"dsInit\":" + String(isDs18b20Initialized ? "true" : "false") + ",";
     json += "\"deviceCount\":" + String(deviceCount) + ",";
+    json += "\"poll\":" + getTemperatureStatusJSON() + ",";
     
     // Список всех датчиков
     json += "\"sensors\":[";
@@ -229,3 +232,7 @@ void handleDebugTemperatureSetAddress() {
     server.send(200, "application/json", "{\"success\":true}");
 }
 
+void handleDebugTemperatureLogs() {
+    String json = getTemperatureLogsJSON();
+    server.send(200, "application/json", json);
+}

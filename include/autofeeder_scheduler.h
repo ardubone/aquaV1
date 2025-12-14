@@ -95,8 +95,12 @@ public:
             // Проверка интервала между повторениями
             bool canRepeat = sched.currentRepeat > 0 && 
                            (currentMillis - sched.lastActivationTime) >= ScheduleTime::REPEAT_INTERVAL;
+            
+            // Защита от повторного запуска в ту же минуту (cooldown)
+            bool cooldownPassed = (sched.lastActivationTime == 0) || 
+                                 (currentMillis - sched.lastActivationTime) >= AUTOFEEDER_START_COOLDOWN_MS;
 
-            if (!sched.isCompleted && (isTimeMatch || canRepeat)) {
+            if (!sched.isCompleted && (isTimeMatch || canRepeat) && cooldownPassed) {
                 if (!_wasActivated) {
                     Serial.print(F("[AUTOFEEDER] Активация по расписанию "));
                     Serial.print(i + 1);

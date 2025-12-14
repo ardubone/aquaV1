@@ -149,7 +149,11 @@ void handleGraphData()
             v = uint16ToFloat(logs[i].roomHumidity);
         else if (type == "press")
             v = uint16ToFloat(logs[i].roomPressure);
-        json += String(v, 1);
+        if (isnan(v) || isinf(v)) {
+            json += "null";
+        } else {
+            json += String(v, 1);
+        }
         if (i < endIdx - 1)
             json += ",";
     }

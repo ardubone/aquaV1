@@ -10,8 +10,8 @@ static bool lightTankLrgManualOverride = false;
 static DateTime lastLightTankLrgToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
 // Настройки времени работы аквариума L
-static uint8_t lightTankLrgOnHour = 8;
-static uint8_t lightTankLrgOffHour = 19;
+static uint8_t lightTankLrgOnHour = 10;
+static uint8_t lightTankLrgOffHour = 18;
 
 // Переменные состояния света аквариума S (малый)
 static bool lightTankSmlState = false;
@@ -19,8 +19,8 @@ static bool lightTankSmlManualOverride = false;
 static DateTime lastLightTankSmlToggleTime = DateTime(2000, 1, 1, 0, 0, 0);
 
 // Настройки времени работы аквариума S
-static uint8_t lightTankSmlOnHour = 8;
-static uint8_t lightTankSmlOffHour = 19;
+static uint8_t lightTankSmlOnHour = 10;
+static uint8_t lightTankSmlOffHour = 18;
 
 // Переменные состояния UV лампы аквариума S
 static bool uvLampTankSmlState = false;

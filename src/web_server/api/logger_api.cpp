@@ -6,6 +6,14 @@
 
 extern WebServer server;
 
+static inline void appendJsonNumberOrNull(String& json, float value, uint8_t decimals) {
+    if (isnan(value) || isinf(value)) {
+        json += "null";
+        return;
+    }
+    json += String(value, (unsigned int)decimals);
+}
+
 void handleCriticalLogsApi()
 {
     uint16_t count = 0;
@@ -36,9 +44,12 @@ void handleCriticalLogsApi()
         }
         
         json += "\"parameter\":\"" + paramName + "\",";
-        json += "\"currentValue\":" + String(currentValue, 2) + ",";
-        json += "\"previousAvg\":" + String(int16ToFloat(criticalLogs[i].previousAvg), 2) + ",";
-        json += "\"changePercent\":" + String(uint16ToFloat(criticalLogs[i].changePercent), 2);
+        json += "\"currentValue\":";
+        appendJsonNumberOrNull(json, currentValue, 2);
+        json += ",\"previousAvg\":";
+        appendJsonNumberOrNull(json, int16ToFloat(criticalLogs[i].previousAvg), 2);
+        json += ",\"changePercent\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(criticalLogs[i].changePercent), 2);
         json += "}";
     }
     
@@ -61,11 +72,17 @@ void handleHourlyLogsApi()
         
         json += "{";
         json += "\"timestamp\":\"" + dt.timestamp() + "\",";
-        json += "\"tankLrgTemp\":" + String(int16ToFloat(logs[i].tankLrgTemp), 1) + ",";
-        json += "\"tankSmlTemp\":" + String(int16ToFloat(logs[i].tankSmlTemp), 1) + ",";
-        json += "\"roomTemp\":" + String(int16ToFloat(logs[i].roomTemp), 1) + ",";
-        json += "\"roomHumidity\":" + String(uint16ToFloat(logs[i].roomHumidity), 0) + ",";
-        json += "\"roomPressure\":" + String(uint16ToFloat(logs[i].roomPressure), 1) + ",";
+        json += "\"tankLrgTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankLrgTemp), 1);
+        json += ",\"tankSmlTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankSmlTemp), 1);
+        json += ",\"roomTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].roomTemp), 1);
+        json += ",\"roomHumidity\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomHumidity), 0);
+        json += ",\"roomPressure\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomPressure), 1);
+        json += ",";
         json += "\"samplesCount\":" + String(logs[i].samplesCount);
         json += "}";
     }
@@ -89,11 +106,17 @@ void handleHourlyLogs72Api()
         
         json += "{";
         json += "\"timestamp\":\"" + dt.timestamp() + "\",";
-        json += "\"tankLrgTemp\":" + String(int16ToFloat(logs[i].tankLrgTemp), 1) + ",";
-        json += "\"tankSmlTemp\":" + String(int16ToFloat(logs[i].tankSmlTemp), 1) + ",";
-        json += "\"roomTemp\":" + String(int16ToFloat(logs[i].roomTemp), 1) + ",";
-        json += "\"roomHumidity\":" + String(uint16ToFloat(logs[i].roomHumidity), 0) + ",";
-        json += "\"roomPressure\":" + String(uint16ToFloat(logs[i].roomPressure), 1) + ",";
+        json += "\"tankLrgTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankLrgTemp), 1);
+        json += ",\"tankSmlTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankSmlTemp), 1);
+        json += ",\"roomTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].roomTemp), 1);
+        json += ",\"roomHumidity\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomHumidity), 0);
+        json += ",\"roomPressure\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomPressure), 1);
+        json += ",";
         json += "\"samplesCount\":" + String(logs[i].samplesCount);
         json += "}";
     }
@@ -117,11 +140,17 @@ void handleMinutesLogsApi()
         
         json += "{";
         json += "\"timestamp\":\"" + dt.timestamp() + "\",";
-        json += "\"tankLrgTemp\":" + String(int16ToFloat(logs[i].tankLrgTemp), 1) + ",";
-        json += "\"tankSmlTemp\":" + String(int16ToFloat(logs[i].tankSmlTemp), 1) + ",";
-        json += "\"roomTemp\":" + String(int16ToFloat(logs[i].roomTemp), 1) + ",";
-        json += "\"roomHumidity\":" + String(uint16ToFloat(logs[i].roomHumidity), 0) + ",";
-        json += "\"roomPressure\":" + String(uint16ToFloat(logs[i].roomPressure), 1) + ",";
+        json += "\"tankLrgTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankLrgTemp), 1);
+        json += ",\"tankSmlTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].tankSmlTemp), 1);
+        json += ",\"roomTemp\":";
+        appendJsonNumberOrNull(json, int16ToFloat(logs[i].roomTemp), 1);
+        json += ",\"roomHumidity\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomHumidity), 0);
+        json += ",\"roomPressure\":";
+        appendJsonNumberOrNull(json, uint16ToFloat(logs[i].roomPressure), 1);
+        json += ",";
         json += "\"samplesCount\":" + String(logs[i].samplesCount);
         json += "}";
     }

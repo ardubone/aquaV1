@@ -22,20 +22,26 @@ bool PCF8574Manager::begin() {
     Serial.println(F("PCF8574 initialized successfully!"));
     
     // Инициализация пинов согласно конфигурации
-    // Для выходов: MOSFET кормушек - HIGH (через инверсию в setFeederRelay станет LOW = выключено)
-    //              UV лампы - LOW (выключено по умолчанию)
     // Для входов оставляем HIGH (1) с подтяжкой
-    portState = 0xFF;  // Все пины HIGH (входы с подтяжкой)
+    portState = 0xFF;  // Все пины HIGH
+
+    // UV лампы (выходы) по умолчанию выключены: LOW
     for (uint8_t i = 0; i < PCF8574_PIN_COUNT; i++) {
         if (pcf8574Pins[i].isOutput) {
-            // MOSFET кормушек оставляем HIGH (инверсия в setFeederRelay сделает их LOW = выключено)
-            // UV лампы устанавливаем LOW (выключено)
             if (pcf8574Pins[i].pin != PCF8574_FEEDER_RELAY_TANK10 && 
                 pcf8574Pins[i].pin != PCF8574_FEEDER_RELAY_TANK20) {
                 portState &= ~(1 << pcf8574Pins[i].pin);  // UV лампы - LOW (выключено)
             }
         }
     }
+
+    // Кормушки: гарантируем OFF на старте в зависимости от логики управления
+    // invert=true  => OFF=HIGH
+    // invert=false => OFF=LOW
+    #if !PCF8574_FEEDER_INVERT_LOGIC
+        portState &= ~(1 << PCF8574_FEEDER_RELAY_TANK10);
+        portState &= ~(1 << PCF8574_FEEDER_RELAY_TANK20);
+    #endif
     
     // Записываем начальное состояние
     Wire.beginTransmission(address);
@@ -116,9 +122,13 @@ uint8_t PCF8574Manager::getAllPins() {
     
     Wire.requestFrom(address, (uint8_t)1);
     if (Wire.available()) {
-        return Wire.read();
+        uint8_t data = Wire.read();
+        lastPortState = data;
+        return data;
     }
-    return 0;
+    // Если чтение не удалось, не вносим ложные LOW: возвращаем последнее известное состояние
+    Serial.println(F("[PCF8574] WARN: getAllPins read failed, using lastPortState"));
+    return lastPortState;
 }
 
 // Методы для кормушки Tank10
@@ -242,5 +252,24 @@ void PCF8574Manager::update() {
     if (Wire.available()) {
         uint8_t currentState = Wire.read();
         lastPortState = currentState;
+
+        // Если из-за помех \"слетели\" выходы, восстанавливаем их из portState (с ограничением по частоте)
+        static unsigned long lastRefreshMs = 0;
+        const unsigned long nowMs = millis();
+
+        uint8_t outputMask = 0;
+        for (uint8_t i = 0; i < PCF8574_PIN_COUNT; i++) {
+            if (pcf8574Pins[i].isOutput) {
+                outputMask |= (1 << pcf8574Pins[i].pin);
+            }
+        }
+
+        if ((((uint8_t)(currentState ^ portState)) & outputMask) != 0 &&
+            (nowMs - lastRefreshMs) >= PCF8574_REFRESH_INTERVAL_MS) {
+            lastRefreshMs = nowMs;
+            Wire.beginTransmission(address);
+            Wire.write(portState);
+            Wire.endTransmission();
+        }
     }
 } 

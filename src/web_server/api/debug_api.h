@@ -8,4 +8,5 @@ void handleDebugPcf8574SetPin();
 // Temperature sensors API
 void handleDebugTemperatureStatus();
 void handleDebugTemperatureSetAddress();
+void handleDebugTemperatureLogs();
 

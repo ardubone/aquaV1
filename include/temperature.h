@@ -3,8 +3,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define ONE_WIRE_BUS 19
-
 extern OneWire oneWire;
 extern DallasTemperature sensors;
 
@@ -33,3 +31,6 @@ void debugScanOneWireBus();
 // Обратная совместимость
 float getTank20Temperature();
 float getTank10Temperature(); 
+
+String getTemperatureLogsJSON();
+String getTemperatureStatusJSON();

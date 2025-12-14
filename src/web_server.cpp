@@ -126,6 +126,7 @@ void setupWebServer()
     server.on("/debug/pcf8574/setpin", HTTP_POST, handleDebugPcf8574SetPin);
     server.on("/debug/temperature/status", handleDebugTemperatureStatus);
     server.on("/debug/temperature/setaddress", HTTP_POST, handleDebugTemperatureSetAddress);
+    server.on("/debug/temperature/logs", handleDebugTemperatureLogs);
     
     server.begin();
 }

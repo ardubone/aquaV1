@@ -34,6 +34,12 @@ private:
     DateTime _limitTriggerTime;
     FeedingType _currentFeedingType;  // Тип текущего кормления
     
+    // Latched-логика концевика
+    bool _limitSeen;                  // Флаг: видели ли LOW хотя бы раз
+    unsigned long _limitFirstSeenTime; // Время первого обнаружения LOW
+    unsigned long _relayStartTime;    // Время запуска реле (для проверки дебаунса)
+    unsigned long _scheduledStopTime; // Запланированное время остановки реле
+    
     // Callback для активации (используется планировщиком)
     static bool activateCallbackTank10();
     static bool activateCallbackTank20();

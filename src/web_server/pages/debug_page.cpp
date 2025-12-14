@@ -44,6 +44,12 @@ void handleDebugPage() {
     html += "</tbody>\n";
     html += "</table>\n";
     html += "</div>\n";
+    html += "<div class=\"card mt-3\">\n";
+    html += "<div class=\"card-header\">История логов DS18B20</div>\n";
+    html += "<div class=\"card-body\">\n";
+    html += "<pre id=\"tempLogs\" class=\"mb-0\">Загрузка...</pre>\n";
+    html += "</div>\n";
+    html += "</div>\n";
     
     html += "</div></div></div>\n";
     
@@ -61,8 +67,10 @@ void handleDebugPage() {
     html += "<div class=\"card-body\">\n";
     html += "<p><strong>" + String(TANK_LRG_NAME) + ":</strong> <span id=\"tankLrgAddress\">Загрузка...</span></p>\n";
     html += "<p class=\"mb-2\"><small class=\"text-muted\">Статус: <span id=\"tankLrgStatus\" class=\"badge bg-secondary\">-</span></small></p>\n";
+    html += "<p class=\"mb-2\"><small class=\"text-muted\">Адрес валиден: <span id=\"tankLrgAddrValid\" class=\"badge bg-secondary\">-</span></small></p>\n";
     html += "<p><strong>" + String(TANK_SML_NAME) + ":</strong> <span id=\"tankSmlAddress\">Загрузка...</span></p>\n";
     html += "<p class=\"mb-0\"><small class=\"text-muted\">Статус: <span id=\"tankSmlStatus\" class=\"badge bg-secondary\">-</span></small></p>\n";
+    html += "<p class=\"mb-0\"><small class=\"text-muted\">Адрес валиден: <span id=\"tankSmlAddrValid\" class=\"badge bg-secondary\">-</span></small></p>\n";
     html += "</div></div></div>\n";
     html += "<div class=\"col-md-6\">\n";
     html += "<div class=\"card\">\n";
@@ -70,7 +78,10 @@ void handleDebugPage() {
     html += "<div class=\"card-body\">\n";
     html += "<p><strong>" + String(TANK_LRG_NAME) + ":</strong> <span id=\"tankLrgTemp\">-</span> °C</p>\n";
     html += "<p><strong>" + String(TANK_SML_NAME) + ":</strong> <span id=\"tankSmlTemp\">-</span> °C</p>\n";
-    html += "<p class=\"text-muted mb-0\">Найдено датчиков на шине: <span id=\"deviceCount\">0</span></p>\n";
+    html += "<p class=\"text-muted\">Найдено датчиков на шине: <span id=\"deviceCount\">0</span></p>\n";
+    html += "<p class=\"text-muted\">DS18B20: <span id=\"dsInitBadge\" class=\"badge bg-secondary\">-</span></p>\n";
+    html += "<p class=\"text-muted\">Ожидание конвертации: <span id=\"convWaitBadge\" class=\"badge bg-secondary\">-</span></p>\n";
+    html += "<p class=\"text-muted mb-0\">lastAge(ms)=<span id=\"lastReqAge\">0</span>, conv(ms)=<span id=\"convTime\">0</span>, poll(ms)=<span id=\"pollInterval\">0</span></p>\n";
     html += "</div></div></div>\n";
     html += "</div>\n";
     
@@ -217,13 +228,29 @@ void handleDebugPage() {
     html += "      document.getElementById('tankSmlTemp').textContent = data.tankSmlTemp.toFixed(1);\n";
     html += "      document.getElementById('deviceCount').textContent = data.deviceCount;\n";
     html += "      \n";
+    html += "      const dsBadge = document.getElementById('dsInitBadge');\n";
+    html += "      dsBadge.textContent = data.dsInit ? 'инициализирован' : 'нет';\n";
+    html += "      dsBadge.className = data.dsInit ? 'badge bg-success' : 'badge bg-danger';\n";
+    html += "      const convBadge = document.getElementById('convWaitBadge');\n";
+    html += "      const waiting = data.poll && data.poll.waitingForConversion;\n";
+    html += "      convBadge.textContent = waiting ? 'да' : 'нет';\n";
+    html += "      convBadge.className = waiting ? 'badge bg-warning' : 'badge bg-secondary';\n";
+    html += "      document.getElementById('lastReqAge').textContent = data.poll ? data.poll.lastRequestAgeMs : 0;\n";
+    html += "      document.getElementById('convTime').textContent = data.poll ? data.poll.convTimeMs : 0;\n";
+    html += "      document.getElementById('pollInterval').textContent = data.poll ? data.poll.pollIntervalMs : 0;\n";
     html += "      const tankLrgStatus = document.getElementById('tankLrgStatus');\n";
     html += "      tankLrgStatus.textContent = data.tankLrgConnected ? 'подключен' : 'нет связи';\n";
     html += "      tankLrgStatus.className = data.tankLrgConnected ? 'badge bg-success' : 'badge bg-danger';\n";
+    html += "      const tankLrgAddrValid = document.getElementById('tankLrgAddrValid');\n";
+    html += "      tankLrgAddrValid.textContent = data.addrValidLrg ? 'да' : 'нет';\n";
+    html += "      tankLrgAddrValid.className = data.addrValidLrg ? 'badge bg-success' : 'badge bg-danger';\n";
     html += "      \n";
     html += "      const tankSmlStatus = document.getElementById('tankSmlStatus');\n";
     html += "      tankSmlStatus.textContent = data.tankSmlConnected ? 'подключен' : 'нет связи';\n";
     html += "      tankSmlStatus.className = data.tankSmlConnected ? 'badge bg-success' : 'badge bg-danger';\n";
+    html += "      const tankSmlAddrValid = document.getElementById('tankSmlAddrValid');\n";
+    html += "      tankSmlAddrValid.textContent = data.addrValidSml ? 'да' : 'нет';\n";
+    html += "      tankSmlAddrValid.className = data.addrValidSml ? 'badge bg-success' : 'badge bg-danger';\n";
     html += "      \n";
     html += "      // Обновляем выпадающие списки\n";
     html += "      const tankLrgSelect = document.getElementById('tankLrgSelect');\n";
@@ -310,14 +337,27 @@ void handleDebugPage() {
     html += "  updateTemperatureStatus();\n";
     html += "}\n";
     html += "\n";
+    html += "function updateTemperatureLogs() {\n";
+    html += "  fetch('/debug/temperature/logs')\n";
+    html += "    .then(response => response.json())\n";
+    html += "    .then(data => {\n";
+    html += "      const pre = document.getElementById('tempLogs');\n";
+    html += "      pre.textContent = (data.logs || []).join('\\n');\n";
+    html += "    })\n";
+    html += "    .catch(error => {\n";
+    html += "      document.getElementById('tempLogs').textContent = 'Ошибка загрузки логов';\n";
+    html += "    });\n";
+    html += "}\n";
+    html += "\n";
     html += "// Обновляем состояние PCF8574 каждые 500мс\n";
     html += "setInterval(updatePinsStatus, 500);\n";
     html += "// Обновляем состояние датчиков каждые 5 секунд\n";
     html += "updateTemperatureStatus();\n";
     html += "setInterval(updateTemperatureStatus, 5000);\n";
+    html += "updateTemperatureLogs();\n";
+    html += "setInterval(updateTemperatureLogs, 5000);\n";
     html += "</script>\n";
     
     html += htmlFooter();
     server.send(200, "text/html", html);
 }
-

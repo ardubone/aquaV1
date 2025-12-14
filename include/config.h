@@ -11,7 +11,8 @@ extern DeviceAddress tankSmlSensorAddr;
 
 // Адреса температурных датчиков (Дефолтные значения)
 const DeviceAddress TEMP_SENSOR_ADDR_TANK_LRG = {0x28, 0x29, 0x1F, 0x52, 0x00, 0x00, 0x00, 0xF2};
-const DeviceAddress TEMP_SENSOR_ADDR_TANK_SML = {0x28, 0x80, 0xF2, 0x53, 0x00, 0x00, 0x00, 0x81};
+const DeviceAddress TEMP_SENSOR_ADDR_TANK_SML = {0x28, 0x97, 0xf9, 0x52, 0x00, 0x00, 0x00, 0xa0};
+//0x28 97 f9 52 00 00 00 a0
 
 // Флаги состояния компонентов
 extern bool isRtcInitialized;
@@ -32,13 +33,23 @@ extern bool isCameraInitialized;
 
 #define ONE_WIRE_BUS 19
 
+// DS18B20: интервал повторного сканирования шины, если датчики не обнаружены (мс)
+#define DS18B20_RESCAN_INTERVAL_MS 5000UL
+
+// DS18B20: \"фантом\" 85°C часто появляется при сбое/неуспевшей конверсии — считаем невалидным
+#define DS18B20_INVALID_TEMP_C 85.0f
+#define DS18B20_INVALID_TEMP_EPS 0.01f
+
 #define I2C_SDA      21
 #define I2C_SCL      22
 
 // Параметры автокормушки
 #define AUTOFEEDER_RELAY_DELAY          1000  // Задержка после включения реле (мс)
-#define AUTOFEEDER_LIMIT_IGNORE_TIME    5000  // Время игнорирования концевика (мс)
+#define AUTOFEEDER_LIMIT_IGNORE_TIME    5000  // Время игнорирования концевика (мс) - устарело, используется AUTOFEEDER_LIMIT_DEBOUNCE_MS
 #define AUTOFEEDER_SCHEDULE_CHECK_INT   45000 // Интервал проверки расписания (мс)
+#define AUTOFEEDER_LIMIT_DEBOUNCE_MS    50    // Время дебаунса концевика (мс) - минимальное время LOW для валидации
+#define AUTOFEEDER_STOP_DELAY_MS        100   // Задержка остановки мотора после обнаружения LOW (мс)
+#define AUTOFEEDER_START_COOLDOWN_MS    60000 // Защита от повторного запуска в ту же минуту (мс)
 
 // Дефолтное расписание кормления
 // Дни недели: 0=Вс, 1=Пн, 2=Вт, 3=Ср, 4=Чт, 5=Пт, 6=Сб
@@ -58,9 +69,12 @@ extern bool isCameraInitialized;
 
 // Логика управления MOSFET кормушек
 // Если MOSFET не работает с инверсией (подтяжка), установите в false для прямой логики
-#define PCF8574_FEEDER_INVERT_LOGIC     true  // true = инверсия (LOW на PCF = включено), false = прямая (HIGH на PCF = включено)
+#define PCF8574_FEEDER_INVERT_LOGIC     false  // true = инверсия (LOW на PCF = включено), false = прямая (HIGH на PCF = включено)
 
 #define PCF8574_ADDRESS 0x20
+
+// PCF8574: периодическая принудительная перезапись выходов, чтобы UV/реле не \"слетали\" от помех (мс)
+#define PCF8574_REFRESH_INTERVAL_MS 250UL
 
 // Конфигурация пинов PCF8574
 struct PCF8574Config {
