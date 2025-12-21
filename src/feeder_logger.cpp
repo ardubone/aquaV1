@@ -54,11 +54,12 @@ void FeederLogger::clearLogs() {
 }
 
 void FeederLogger::dailyCleanup(const DateTime& now) {
-    uint8_t currentDay = now.day();
+    // Вычисляем начало текущего дня (unixtime начала дня: 00:00:00)
+    uint32_t currentDayStart = now.unixtime() - (now.unixtime() % 86400); // 86400 секунд в дне
     
-    // Проверяем, сменился ли день
-    if (_lastCheckedDay != currentDay) {
-        _lastCheckedDay = currentDay;
+    // Проверяем, сменился ли день (или первая инициализация)
+    if (_lastCheckedDayStart == 0 || _lastCheckedDayStart != currentDayStart) {
+        _lastCheckedDayStart = currentDayStart;
         cleanOldLogs(now);
     }
 }

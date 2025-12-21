@@ -27,10 +27,10 @@ class FeederLogger {
 private:
     FeedingLog _logs[MAX_FEEDING_LOGS];
     uint8_t _logCount;
-    uint8_t _lastCheckedDay;        // Последний проверенный день для очистки
+    uint32_t _lastCheckedDayStart;  // Unix timestamp начала последнего проверенного дня
 
 public:
-    FeederLogger() : _logCount(0), _lastCheckedDay(255) {}
+    FeederLogger() : _logCount(0), _lastCheckedDayStart(0) {}
 
     // Добавить лог кормления
     void addLog(const DateTime& timestamp, FeedingType type, 

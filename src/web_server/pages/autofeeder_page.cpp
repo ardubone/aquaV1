@@ -189,7 +189,7 @@ void handleAutoFeederPage() {
     html += "        const onTime = log.relayOnTime ? log.relayOnTime.split(' ')[1] : '-';\n";
     html += "        const offTime = log.relayOffTime ? log.relayOffTime.split(' ')[1] : '-';\n";
     html += "        const limitTime = log.limitTriggered && log.limitTriggerTime ? log.limitTriggerTime.split(' ')[1] : '-';\n";
-    html += "        row.innerHTML = '<td>' + log.timestamp.split(' ')[1] + '</td>' +\n";
+    html += "        row.innerHTML = '<td>' + log.timestamp + '</td>' +\n";
     html += "                        '<td>' + log.type + '</td>' +\n";
     html += "                        '<td>' + onTime + '</td>' +\n";
     html += "                        '<td>' + offTime + '</td>' +\n";
